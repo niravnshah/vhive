@@ -25,3 +25,16 @@
 
 # Binaries
 vhive
+examples/deployer/deployer
+examples/invoker/invoker
+runc
+
+# downloaded files
+protoc-3.19.4-linux-x86_64.zip
+containerd-1.6.2-linux-amd64.tar.gz
+go1.18.linux-amd64.tar.gz
+istio-1.12.5/
+
+# generated files
+*_lat.csv
+endpoints.json
