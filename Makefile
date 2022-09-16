@@ -24,7 +24,7 @@ SUBDIRS:=ctriface taps misc profile
 EXTRAGOARGS:=-v -race -cover
 EXTRAGOARGS_NORACE:=-v
 EXTRATESTFILES:=vhive_test.go stats.go vhive.go functions.go
-WITHUPF:=-upfTest
+WITHUPF:=-upfTest -inmemTest
 WITHLAZY:=-lazyTest
 WITHSNAPSHOTS:=-snapshotsTest
 CTRDLOGDIR:=/tmp/ctrd-logs
@@ -136,7 +136,7 @@ test-subdirs: $(SUBDIRS)
 test-cri:
 	$(MAKE) -C cri test-cri-firecracker
 
-test-cri-gvisor:	
+test-cri-gvisor:
 	$(MAKE) -C cri test-cri-gvisor
 
 test-cri-travis: # Testing in travis is deprecated
