@@ -133,9 +133,10 @@ func (t *Trace) containsRecord(rec Record) bool {
 
 // ProcessRecord Prepares the trace, the regions map, and the working set file for replay
 // Must be called when record is done (i.e., it is not concurrency-safe vs. AppendRecord)
-func (t *Trace) ProcessRecord(GuestMemPath, WorkingSetPath string) {
+func (s *SnapshotState) ProcessRecord(GuestMemPath, WorkingSetPath string) {
 	log.Debug("Preparing replay structures")
 
+	t := s.trace
 	// sort trace records in the ascending order by offset
 	sort.Slice(t.trace, func(i, j int) bool {
 		return t.trace[i].offset < t.trace[j].offset
@@ -154,12 +155,13 @@ func (t *Trace) ProcessRecord(GuestMemPath, WorkingSetPath string) {
 		last = rec.offset
 	}
 
-	t.writeWorkingSetPagesToFile(GuestMemPath, WorkingSetPath)
+	s.writeWorkingSetPagesToFile(GuestMemPath, WorkingSetPath)
 }
 
-func (t *Trace) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath string) {
+func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath string) {
 	log.Debug("Writing the working set pages to a disk")
 
+	t := s.trace
 	fSrc, err := os.Open(guestMemFileName)
 	if err != nil {
 		log.Fatalf("Failed to open guest memory file for reading")
@@ -175,6 +177,9 @@ func (t *Trace) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath stri
 		dstOffset int64
 		count     int
 	)
+
+	size := len(t.trace) * os.Getpagesize()
+	s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
 
 	// Form a sorted slice of keys to access the map in a predetermined order
 	keys := make([]uint64, 0)
@@ -193,8 +198,15 @@ func (t *Trace) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath stri
 			log.Fatalf("Read file failed for src")
 		}
 
-		if n, err := fDst.WriteAt(buf, dstOffset); n != copyLen || err != nil {
-			log.Fatalf("Write file failed for dst")
+		if !s.InMemWorkingSet {
+			if n, err := fDst.WriteAt(buf, dstOffset); n != copyLen || err != nil {
+				log.Fatalf("Write file failed for dst")
+			} else {
+				log.Warnf("Copied %d bytes from buf to file", n)
+			}
+		} else {
+			nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf)
+			log.Warnf("Copied %d bytes from buf to im mem working set", nb_bytes)
 		}
 
 		dstOffset += int64(copyLen)

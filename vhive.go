@@ -64,6 +64,7 @@ var (
 	pinnedFuncNum      *int
 	criSock            *string
 	hostIface          *string
+	inMemWorkingSet    *bool
 )
 
 func main() {
@@ -84,6 +85,7 @@ func main() {
 	criSock = flag.String("criSock", "/etc/vhive-cri/vhive-cri.sock", "Socket address for CRI service")
 	hostIface = flag.String("hostIface", "", "Host net-interface for the VMs to bind to for internet access")
 	sandbox := flag.String("sandbox", "firecracker", "Sandbox tech to use, valid options: firecracker, gvisor")
+	inMemWorkingSet := flag.Bool("inmem", false, "Use In-memory working set")
 	flag.Parse()
 
 	if *sandbox != "firecracker" && *sandbox != "gvisor" {
@@ -140,6 +142,7 @@ func main() {
 		ctriface.WithTestModeOn(testModeOn),
 		ctriface.WithSnapshots(*isSnapshotsEnabled),
 		ctriface.WithUPF(*isUPFEnabled),
+		ctriface.InMemWorkingSet(*inMemWorkingSet),
 		ctriface.WithMetricsMode(*isMetricsMode),
 		ctriface.WithLazyMode(*isLazyMode),
 	)

@@ -26,10 +26,10 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"syscall"
-	"time"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -59,7 +59,7 @@ type WorkloadIoWriter struct {
 }
 
 func NewWorkloadIoWriter(vmID string) WorkloadIoWriter {
-	return WorkloadIoWriter {log.WithFields(log.Fields{"vmID": vmID})}
+	return WorkloadIoWriter{log.WithFields(log.Fields{"vmID": vmID})}
 }
 
 func (wio WorkloadIoWriter) Write(p []byte) (n int, err error) {
@@ -86,6 +86,7 @@ type Orchestrator struct {
 	snapshotsDir     string
 	isMetricsMode    bool
 	hostIface        string
+	inMemWorkingSet  bool
 
 	memoryManager *manager.MemoryManager
 }
@@ -117,7 +118,8 @@ func NewOrchestrator(snapshotter, hostIface string, opts ...OrchestratorOption) 
 
 	if o.GetUPFEnabled() {
 		managerCfg := manager.MemoryManagerCfg{
-			MetricsModeOn: o.isMetricsMode,
+			MetricsModeOn:   o.isMetricsMode,
+			InMemWorkingSet: o.inMemWorkingSet,
 		}
 		o.memoryManager = manager.NewMemoryManager(managerCfg)
 	}

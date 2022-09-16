@@ -62,6 +62,7 @@ type SnapshotStateCfg struct {
 	IsLazyMode       bool
 	GuestMemSize     int
 	metricsModeOn    bool
+	InMemWorkingSet  bool
 }
 
 // SnapshotState Stores the state of the snapshot
@@ -83,8 +84,9 @@ type SnapshotState struct {
 
 	isRecordReady bool
 
-	guestMem   []byte
-	workingSet []byte
+	guestMem         []byte
+	workingSet       []byte
+	workingSet_InMem []byte
 
 	// Stats
 	totalPFServed  []float64
@@ -257,9 +259,16 @@ func (s *SnapshotState) fetchState() error {
 
 	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
 
-	if n, err := f.Read(s.workingSet); n != size || err != nil {
-		log.Errorf("Reading working set file failed: %v\n", err)
-		return err
+	if !s.InMemWorkingSet {
+		if n, err := f.Read(s.workingSet); n != size || err != nil {
+			log.Errorf("Reading working set file failed: %v\n", err)
+			return err
+		} else {
+			log.Warnf("Copied %d bytes from file to working set", n)
+		}
+	} else {
+		nb_bytes := copy(s.workingSet, s.workingSet_InMem)
+		log.Warnf("Copied %d bytes from in mem to working set", nb_bytes)
 	}
 
 	log.Debug("Fetched the entire working set")
