@@ -25,3 +25,14 @@
 
 # Binaries
 vhive
+tags
+runc
+examples/deployer/deployer
+.vscode/
+istio-1.12.5/
+endpoints.json
+endpoints.json.org
+go1.18.linux-amd64.tar.gz
+protoc-3.19.4-linux-x86_64.zip
+containerd-1.6.2-linux-amd64.tar.gz
+rps*.csv
