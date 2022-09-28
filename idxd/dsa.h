@@ -43,6 +43,12 @@ static inline void dump_desc(struct dsa_hw_desc *hw)
 		printf("desc[%d]: 0x%016lx\n", i, rhw->field[i]);
 }
 
+static inline void dump_desc_wrapper(void *hw)
+{
+	dump_desc((struct dsa_hw_desc *)(hw));
+}
+
+
 static inline unsigned char enqcmd(struct dsa_hw_desc *desc,
 			volatile void *reg)
 {
@@ -90,15 +96,16 @@ static __always_inline
 void dsa_desc_submit(void *wq_portal, int dedicated,
 		void *desc)
 {
-	printf("Entering %s\n", __func__);
-	dump_desc(desc);
+	// printf("Entering %s\n", __func__);
+	// dump_desc(desc);
+	// printf("wq in %s = %p\n", __func__, wq_portal);
 	struct dsa_hw_desc *hw = (struct dsa_hw_desc *)desc;
 	if (dedicated)
 		movdir64b(hw, wq_portal);
 	else /* retry infinitely, a retry param is not needed at this time */
 		while (enqcmd(hw, wq_portal))
 			;
-	printf("Exiting %s\n", __func__);
+	// printf("Exiting %s\n", __func__);
 }
 
 

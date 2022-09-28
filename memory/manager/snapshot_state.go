@@ -45,6 +45,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
+	"github.com/ease-lab/vhive/idxd"
 	"github.com/ease-lab/vhive/metrics"
 
 	"unsafe"
@@ -63,6 +64,7 @@ type SnapshotStateCfg struct {
 	GuestMemSize     int
 	metricsModeOn    bool
 	InMemWorkingSet  bool
+	UseDSA           bool
 }
 
 // SnapshotState Stores the state of the snapshot
@@ -130,7 +132,7 @@ func (s *SnapshotState) setupStateOnActivate() {
 
 func (s *SnapshotState) getUFFD() error {
 	var d net.Dialer
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	for {
@@ -243,40 +245,49 @@ func AlignedBlock(blockSize int) []byte {
 
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
-	if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
-		log.Errorf("Failed to fetch VMM state: %v\n", err)
-		return err
-	}
-
 	size := len(s.trace.trace) * os.Getpagesize()
-
-	// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
-	f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
-	if err != nil {
-		log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
-		return err
-	}
-
 	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
 
+	log.Infof("Starting to fetch working set")
+
 	if !s.InMemWorkingSet {
+		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
+			log.Errorf("Failed to fetch VMM state: %v\n", err)
+			return err
+		}
+
+		// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
+		f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
+		if err != nil {
+			log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
+			return err
+		}
+
 		if n, err := f.Read(s.workingSet); n != size || err != nil {
 			log.Errorf("Reading working set file failed: %v\n", err)
 			return err
-		} else {
+		} /*else {
 			log.Warnf("Copied %d bytes from file to working set", n)
+		}*/
+		if err := f.Close(); err != nil {
+			log.Errorf("Failed to close the working set file: %v\n", err)
+			return err
 		}
 	} else {
-		nb_bytes := copy(s.workingSet, s.workingSet_InMem)
-		log.Warnf("Copied %d bytes from in mem to working set", nb_bytes)
+		if s.UseDSA {
+			res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
+			if res != 0 {
+				log.Warnf("DSA Copy failed with status = 0x%x for size = %d", res, size)
+			} else {
+				log.Infof("Copied %d bytes from in mem to working set using DSA", size)
+			}
+		} else {
+			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
+			log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
+		}
 	}
 
-	log.Debug("Fetched the entire working set")
-	if err := f.Close(); err != nil {
-		log.Errorf("Failed to close the working set file: %v\n", err)
-		return err
-	}
-
+	log.Infof("Fetched the entire working set")
 	return nil
 }
 

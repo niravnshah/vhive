@@ -51,6 +51,7 @@ require (
 	github.com/containerd/go-cni v1.1.4
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ease-lab/vhive/examples/protobuf/helloworld v0.0.0-00010101000000-000000000000
+	github.com/ease-lab/vhive/idxd v0.0.0-00010101000000-000000000000
 	github.com/firecracker-microvm/firecracker-containerd v0.0.0-00010101000000-000000000000
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
 	github.com/go-multierror/multierror v1.0.2
@@ -71,3 +72,5 @@ require (
 	google.golang.org/grpc v1.34.0
 	k8s.io/cri-api v0.20.6
 )
+
+replace github.com/ease-lab/vhive/idxd => ./idxd

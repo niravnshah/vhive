@@ -49,6 +49,7 @@ var (
 	isWithCache            = flag.Bool("withCache", false, "Do not drop the cache before measurements")
 	benchDir               = flag.String("benchDirTest", "bench_results", "Directory where stats should be saved")
 	inMemWorkingSetTest    = flag.Bool("inmemTest", false, "Enable in memory working set")
+	useDSA                 = flag.Bool("dsaTest", false, "Use DSA")
 )
 
 func TestMain(m *testing.M) {
@@ -69,6 +70,7 @@ func TestMain(m *testing.M) {
 	log.Infof("Orchestrator snapshots enabled: %t", *isSnapshotsEnabledTest)
 	log.Infof("Orchestrator UPF enabled: %t", *isUPFEnabledTest)
 	log.Infof("Orchestrator inMemWorkingSet enabled: %t", *inMemWorkingSetTest)
+	log.Infof("Orchestrator useDSA enabled: %t", *useDSA)
 	log.Infof("Orchestrator lazy serving mode enabled: %t", *isLazyModeTest)
 	log.Infof("Orchestrator UPF metrics enabled: %t", *isMetricsModeTest)
 	log.Infof("Drop cache: %t", !*isWithCache)
@@ -81,6 +83,7 @@ func TestMain(m *testing.M) {
 		ctriface.WithSnapshots(*isSnapshotsEnabledTest),
 		ctriface.WithUPF(*isUPFEnabledTest),
 		ctriface.InMemWorkingSet(*inMemWorkingSetTest),
+		ctriface.UseDSA(*useDSA),
 		ctriface.WithMetricsMode(*isMetricsModeTest),
 		ctriface.WithLazyMode(*isLazyModeTest),
 	)

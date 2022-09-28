@@ -28,7 +28,9 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"unsafe"
 
+	"github.com/ease-lab/vhive/idxd"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -188,25 +190,51 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 
-	for _, offset := range keys {
+	elem := len(t.regions)
+	buf_slice := make([][]byte, elem)
+	total_size := 0
+	desc_mem := idxd.AlignedBlock(64*elem, 64)
+	comp_mem := idxd.AlignedBlock(32*elem, 32)
+
+	log.Infof("Starting to save working set pages")
+
+	for idx, offset := range keys {
 		regLength := t.regions[offset]
 		copyLen := regLength * os.Getpagesize()
 
-		buf := make([]byte, copyLen)
+		// buf := make([]byte, copyLen)
+		buf_slice[idx] = make([]byte, copyLen)
 
-		if n, err := fSrc.ReadAt(buf, int64(offset)); n != copyLen || err != nil {
+		if n, err := fSrc.ReadAt(buf_slice[idx], int64(offset)); n != copyLen || err != nil {
 			log.Fatalf("Read file failed for src")
 		}
 
 		if !s.InMemWorkingSet {
-			if n, err := fDst.WriteAt(buf, dstOffset); n != copyLen || err != nil {
+			if n, err := fDst.WriteAt(buf_slice[idx], dstOffset); n != copyLen || err != nil {
 				log.Fatalf("Write file failed for dst")
 			} else {
-				log.Warnf("Copied %d bytes from buf to file", n)
+				log.Debug("Copied %d bytes from buf_slice[idx] to file", n)
 			}
 		} else {
-			nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf)
-			log.Warnf("Copied %d bytes from buf to im mem working set", nb_bytes)
+			if s.UseDSA {
+				desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+				comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(&comp_mem[32*idx]))
+
+				desc.Src_addr = (*uint64)(unsafe.Pointer(&buf_slice[idx][0]))
+				desc.Dst_addr = (*uint64)(unsafe.Pointer(&s.workingSet_InMem[dstOffset:][0]))
+				desc.Xfer_size = uint32(copyLen)
+				desc.Opcode = idxd.DSA_OPCODE_MEMMOVE
+				desc.Completion_addr = (*uint64)(unsafe.Pointer(comp))
+				desc.Flags[0] = idxd.IDXD_FLAG_BLOCK_ON_FAULT | idxd.IDXD_FLAG_CRAV | idxd.IDXD_FLAG_RCR
+
+				// idxd.DSA_memmove_sync_go(s.workingSet_InMem[dstOffset:], buf_slice[idx], uint32(copyLen))
+				idxd.DSA_memmove_desc_go(desc, 0)
+				log.Debug("Copied %d bytes from buf to im mem working set using DSA", copyLen)
+			} else {
+				nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf_slice[idx])
+				log.Debug("Copied %d bytes from buf to im mem working set using CPU", nb_bytes)
+			}
+			total_size += copyLen
 		}
 
 		dstOffset += int64(copyLen)
@@ -214,7 +242,24 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 		count += regLength
 	}
 
-	if err := fDst.Sync(); err != nil {
-		log.Fatalf("Sync file failed for dst")
+	if !s.InMemWorkingSet {
+		if err := fDst.Sync(); err != nil {
+			log.Fatalf("Sync file failed for dst")
+		}
+	} else {
+		if s.UseDSA {
+			for idx := 0; idx < elem; idx++ {
+				desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+				idxd.DSA_wait_for_comp_go(desc)
+				comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(desc.Completion_addr))
+				if comp.Status != 1 {
+					log.Warnf("DSA Copy failed with stattus = 0x%x", comp.Status)
+				}
+			}
+			log.Infof("Copied %d bytes from buf to im mem working set using DSA", total_size)
+		} else {
+			log.Infof("Copied %d bytes from buf to im mem working set using CPU", total_size)
+		}
 	}
+	log.Infof("Done with save working set pages")
 }
