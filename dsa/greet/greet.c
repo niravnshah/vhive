@@ -4,7 +4,7 @@
 #include <linux/idxd.h>
 
 #include "greet.h"
-#include "person.h"
+#include "person_orig/person.h"
 #include "idxd_device.h"
 #include "dsa.h"
 
@@ -18,11 +18,9 @@ int greet(const char *name, int year, char *out)
 
         n = sprintf(out, "Buhahahahaha %s from year %d!, We come in peace :)", name, year);
 
-        APerson * of;
-        APerson * newPer;
-        of = get_person("tim", "tim hughes",&newPer);
+        struct APerson * of;
+        of = get_person("tim", "tim hughes");
         printf("Hello C world: My name is %s, %s.\n", of->name, of->long_name);
-        printf("New Per: My name is %s, %s.\n", newPer->name, newPer->long_name);
 
         return n;
 }

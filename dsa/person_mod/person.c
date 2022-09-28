@@ -10,21 +10,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "person.h"
+#include "person_orig/person.h"
 
 // gcc -o person person.c -Wl,-rpath=. libperson.so
 
-APerson *get_person(const char *name, const char *long_name, APerson **outper){
+struct APerson *get_person(const char *name, const char *long_name, struct APerson **outper){
 
-    APerson *fmt = malloc(sizeof(APerson));
+    struct APerson *fmt = malloc(sizeof(struct APerson));
     fmt->name = name;
     fmt->long_name = long_name;
 
-    APerson *temp = malloc(sizeof(APerson));
+    struct APerson *temp = malloc(sizeof(struct APerson));
     temp->name = strdup("Static");
     temp->long_name = strdup("Cast");
 
     *outper = temp;
+
+    return fmt;
+};
+
+struct APerson *get_person_only(const char *name, const char *long_name){
+
+    printf("firstname = %s\n", name);
+    printf("lastname = %s\n", long_name);
+    struct APerson *fmt = malloc(sizeof(struct APerson));
+    fmt->name = strdup(name);
+    fmt->long_name = strdup(long_name);
 
     return fmt;
 };

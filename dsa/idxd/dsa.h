@@ -90,12 +90,16 @@ static __always_inline
 void dsa_desc_submit(void *wq_portal, int dedicated,
 		void *desc)
 {
+	printf("Entering %s\n", __func__);
+	dump_desc(desc);
 	struct dsa_hw_desc *hw = (struct dsa_hw_desc *)desc;
 	if (dedicated)
 		movdir64b(hw, wq_portal);
 	else /* retry infinitely, a retry param is not needed at this time */
 		while (enqcmd(hw, wq_portal))
 			;
+	printf("Exiting %s\n", __func__);
 }
+
 
 #endif

@@ -21,13 +21,13 @@ int
 dsa_memmove(void *input, void *output, uint32_t size)
 {
 	ENTER;
-        struct dsa_hw_desc desc = {};
-        struct dsa_completion_record comp = {};
+        struct dsa_hw_desc desc __attribute__ ((aligned (64))) = {};
+        struct dsa_completion_record comp __attribute__ ((aligned (32))) = {};
 	uint32_t retry = 0;
 
         desc.src_addr = (uint64_t)input;
         desc.dst_addr = (uint64_t)output;
-        desc.xfer_size = 4096;
+        desc.xfer_size = size;
         desc.opcode = DSA_OPCODE_MEMMOVE;
         desc.completion_addr = (uint64_t)&comp;
         desc.flags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
@@ -40,11 +40,6 @@ dsa_memmove(void *input, void *output, uint32_t size)
 		// 	umwait();
 		// }
         }
-
-	if (!memcmp(input, output, size))
-		printf("%s : dsa_memmove succeeeded!\n", __func__);
-	else
-		printf("%s : dsa_memmove failed!\n", __func__);
 
 	EXIT;
 	return 0;
