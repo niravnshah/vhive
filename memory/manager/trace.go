@@ -28,7 +28,9 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"unsafe"
 
+	"github.com/intel/idxd"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -191,6 +193,8 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	elem := len(t.regions)
 	buf_slice := make([][]byte, elem)
 	total_size := 0
+	desc_mem := idxd.AlignedBlock(64*elem, 64)
+	comp_mem := idxd.AlignedBlock(32*elem, 32)
 
 	log.Infof("Starting to save working set pages")
 
@@ -211,8 +215,25 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 				log.Debug("Copied %d bytes from buf_slice[idx] to file", n)
 			}
 		} else {
-			nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf_slice[idx])
-			log.Debug("Copied %d bytes from buf to im mem working set using CPU", nb_bytes)
+			if s.UseDSA {
+				desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+				comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(&comp_mem[32*idx]))
+
+				desc.Src_addr = (*uint64)(unsafe.Pointer(&buf_slice[idx][0]))
+				desc.Dst_addr = (*uint64)(unsafe.Pointer(&s.workingSet_InMem[dstOffset:][0]))
+				desc.Xfer_size = uint32(copyLen)
+				desc.Opcode = idxd.DSA_OPCODE_MEMMOVE
+				desc.Completion_addr = (*uint64)(unsafe.Pointer(comp))
+				desc.Flags[0] = idxd.IDXD_FLAG_BLOCK_ON_FAULT | idxd.IDXD_FLAG_CRAV | idxd.IDXD_FLAG_RCR
+
+				// idxd.DSA_memmove_sync_go(s.workingSet_InMem[dstOffset:], buf_slice[idx], uint32(copyLen))
+				idxd.DSA_memmove_desc_go(desc, 0)
+				log.Debug("Copied %d bytes from buf to im mem working set using DSA", copyLen)
+			} else {
+				nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf_slice[idx])
+				log.Debug("Copied %d bytes from buf to im mem working set using CPU", nb_bytes)
+			}
+			total_size += copyLen
 		}
 
 		dstOffset += int64(copyLen)
@@ -226,7 +247,19 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 		}
 		log.Infof("Copied %d bytes from buf to working set file", total_size)
 	} else {
-		log.Infof("Copied %d bytes from buf to im mem working set using CPU", total_size)
+		if s.UseDSA {
+			for idx := 0; idx < elem; idx++ {
+				desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+				idxd.DSA_wait_for_comp_go(desc)
+				comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(desc.Completion_addr))
+				if comp.Status != 1 {
+					log.Warnf("DSA Copy failed with stattus = 0x%x", comp.Status)
+				}
+			}
+			log.Infof("Copied %d bytes from buf to im mem working set using DSA", total_size)
+		} else {
+			log.Infof("Copied %d bytes from buf to im mem working set using CPU", total_size)
+		}
 	}
 	log.Infof("Done with save working set pages")
 }

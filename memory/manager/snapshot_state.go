@@ -46,6 +46,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/ease-lab/vhive/metrics"
+	"github.com/intel/idxd"
 
 	"unsafe"
 )
@@ -63,6 +64,7 @@ type SnapshotStateCfg struct {
 	GuestMemSize     int
 	metricsModeOn    bool
 	InMemWorkingSet  bool
+	UseDSA           bool
 }
 
 // SnapshotState Stores the state of the snapshot
@@ -272,8 +274,17 @@ func (s *SnapshotState) fetchState() error {
 			return err
 		}
 	} else {
-		nb_bytes := copy(s.workingSet, s.workingSet_InMem)
-		log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
+		if s.UseDSA {
+			res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
+			if res != 0 {
+				log.Warnf("DSA Copy failed with status = 0x%x for size = %d", res, size)
+			} else {
+				log.Infof("Copied %d bytes from in mem to working set using DSA", size)
+			}
+		} else {
+			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
+			log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
+		}
 	}
 
 	return nil

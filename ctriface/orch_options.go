@@ -56,6 +56,13 @@ func InMemWorkingSet(inMemWorkingSet bool) OrchestratorOption {
 	}
 }
 
+// UseDSA Sets whether to use DSA or not
+func UseDSA(useDSA bool) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.useDSA = useDSA
+	}
+}
+
 // WithSnapshotsDir Sets the directory where
 // snapshots should be stored
 func WithSnapshotsDir(snapshotsDir string) OrchestratorOption {

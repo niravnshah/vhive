@@ -65,6 +65,7 @@ var (
 	criSock            *string
 	hostIface          *string
 	inMemWorkingSet    *bool
+	useDSA             *bool
 )
 
 func main() {
@@ -85,7 +86,8 @@ func main() {
 	criSock = flag.String("criSock", "/etc/vhive-cri/vhive-cri.sock", "Socket address for CRI service")
 	hostIface = flag.String("hostIface", "", "Host net-interface for the VMs to bind to for internet access")
 	sandbox := flag.String("sandbox", "firecracker", "Sandbox tech to use, valid options: firecracker, gvisor")
-	inMemWorkingSet := flag.Bool("inmem", false, "Use In-memory working set")
+	inMemWorkingSet = flag.Bool("inmem", false, "Use In-memory working set")
+	useDSA = flag.Bool("dsa", false, "Use DSA for memmove")
 	flag.Parse()
 
 	if *sandbox != "firecracker" && *sandbox != "gvisor" {
@@ -143,6 +145,7 @@ func main() {
 		ctriface.WithSnapshots(*isSnapshotsEnabled),
 		ctriface.WithUPF(*isUPFEnabled),
 		ctriface.InMemWorkingSet(*inMemWorkingSet),
+		ctriface.UseDSA(*useDSA),
 		ctriface.WithMetricsMode(*isMetricsMode),
 		ctriface.WithLazyMode(*isLazyMode),
 	)

@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/ease-lab/vhive/metrics"
+	"github.com/intel/idxd"
 	"gonum.org/v1/gonum/stat"
 
 	log "github.com/sirupsen/logrus"
@@ -47,6 +48,7 @@ const (
 type MemoryManagerCfg struct {
 	MetricsModeOn   bool
 	InMemWorkingSet bool
+	UseDSA          bool
 }
 
 // MemoryManager Serves page faults coming from VMs
@@ -85,6 +87,10 @@ func (m *MemoryManager) RegisterVM(cfg SnapshotStateCfg) error {
 
 	cfg.metricsModeOn = m.MetricsModeOn
 	cfg.InMemWorkingSet = m.InMemWorkingSet
+	cfg.UseDSA = m.UseDSA
+	if m.UseDSA {
+		idxd.DSA_setup_c("/dev/dsa/wq0.0")
+	}
 
 	state := NewSnapshotState(cfg)
 
@@ -111,6 +117,10 @@ func (m *MemoryManager) DeregisterVM(vmID string) error {
 	if state.isActive {
 		logger.Error("Failed to deactivate, VM still active")
 		return errors.New("Failed to deactivate, VM still active")
+	}
+
+	if m.UseDSA {
+		idxd.DSA_close_c()
 	}
 
 	delete(m.instances, vmID)
