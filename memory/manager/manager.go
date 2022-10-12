@@ -45,7 +45,8 @@ const (
 
 // MemoryManagerCfg Global config of the manager
 type MemoryManagerCfg struct {
-	MetricsModeOn bool
+	MetricsModeOn   bool
+	InMemWorkingSet bool
 }
 
 // MemoryManager Serves page faults coming from VMs
@@ -83,6 +84,8 @@ func (m *MemoryManager) RegisterVM(cfg SnapshotStateCfg) error {
 	}
 
 	cfg.metricsModeOn = m.MetricsModeOn
+	cfg.InMemWorkingSet = m.InMemWorkingSet
+
 	state := NewSnapshotState(cfg)
 
 	m.instances[vmID] = state
@@ -240,7 +243,7 @@ func (m *MemoryManager) Deactivate(vmID string) error {
 
 	state.userFaultFD.Close()
 	if !state.isRecordReady && !state.IsLazyMode {
-		state.trace.ProcessRecord(state.GuestMemPath, state.WorkingSetPath)
+		state.ProcessRecord(state.GuestMemPath, state.WorkingSetPath)
 	}
 
 	state.isRecordReady = true

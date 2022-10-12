@@ -49,6 +49,13 @@ func WithUPF(isUPFEnabled bool) OrchestratorOption {
 	}
 }
 
+// InMemWorkingSet Sets the in-memory working set on or off
+func InMemWorkingSet(inMemWorkingSet bool) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.inMemWorkingSet = inMemWorkingSet
+	}
+}
+
 // WithSnapshotsDir Sets the directory where
 // snapshots should be stored
 func WithSnapshotsDir(snapshotsDir string) OrchestratorOption {

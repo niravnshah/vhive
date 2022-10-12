@@ -62,6 +62,7 @@ type SnapshotStateCfg struct {
 	IsLazyMode       bool
 	GuestMemSize     int
 	metricsModeOn    bool
+	InMemWorkingSet  bool
 }
 
 // SnapshotState Stores the state of the snapshot
@@ -83,8 +84,9 @@ type SnapshotState struct {
 
 	isRecordReady bool
 
-	guestMem   []byte
-	workingSet []byte
+	guestMem         []byte
+	workingSet       []byte
+	workingSet_InMem []byte
 
 	// Stats
 	totalPFServed  []float64
@@ -241,31 +243,37 @@ func AlignedBlock(blockSize int) []byte {
 
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
-	if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
-		log.Errorf("Failed to fetch VMM state: %v\n", err)
-		return err
-	}
-
 	size := len(s.trace.trace) * os.Getpagesize()
 
-	// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
-	f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
-	if err != nil {
-		log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
-		return err
-	}
+	log.Infof("Starting to fetch working set")
 
-	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
+	if !s.InMemWorkingSet {
+		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
+			log.Errorf("Failed to fetch VMM state: %v\n", err)
+			return err
+		}
 
-	if n, err := f.Read(s.workingSet); n != size || err != nil {
-		log.Errorf("Reading working set file failed: %v\n", err)
-		return err
-	}
+		// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
+		f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
+		if err != nil {
+			log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
+			return err
+		}
 
-	log.Debug("Fetched the entire working set")
-	if err := f.Close(); err != nil {
-		log.Errorf("Failed to close the working set file: %v\n", err)
-		return err
+		s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
+		if n, err := f.Read(s.workingSet); n != size || err != nil {
+			log.Errorf("Reading working set file failed: %v\n", err)
+			return err
+		} else {
+			log.Infof("Copied %d bytes from file to working set", n)
+		}
+		if err := f.Close(); err != nil {
+			log.Errorf("Failed to close the working set file: %v\n", err)
+			return err
+		}
+	} else {
+		nb_bytes := copy(s.workingSet, s.workingSet_InMem)
+		log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
 	}
 
 	return nil
@@ -449,13 +457,18 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 
 	var (
 		srcOffset uint64
+		src       uint64
 	)
 
 	for _, offset := range keys {
 		regLength := s.trace.regions[offset]
 		regAddress := s.startAddress + offset
 		mode := uint64(C.const_UFFDIO_COPY_MODE_DONTWAKE)
-		src := uint64(uintptr(unsafe.Pointer(&s.workingSet[srcOffset])))
+		if s.InMemWorkingSet {
+			src = uint64(uintptr(unsafe.Pointer(&s.workingSet_InMem[srcOffset])))
+		} else {
+			src = uint64(uintptr(unsafe.Pointer(&s.workingSet[srcOffset])))
+		}
 		dst := regAddress
 
 		if err := installRegion(fd, src, dst, mode, uint64(regLength)); err != nil {
