@@ -235,7 +235,7 @@ func (c *coordinator) orchOffloadInstance(ctx context.Context, fi *funcInstance)
 		return err
 	}
 
-	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*300)
 	defer cancel()
 
 	if err := c.orch.Offload(ctxTimeout, fi.VmID); err != nil {
