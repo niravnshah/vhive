@@ -46,7 +46,6 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/ease-lab/vhive/metrics"
-	"github.com/intel/idxd"
 
 	"unsafe"
 )
@@ -65,6 +64,7 @@ type SnapshotStateCfg struct {
 	metricsModeOn    bool
 	InMemWorkingSet  bool
 	UseDSA           bool
+	MovePages        bool
 }
 
 // SnapshotState Stores the state of the snapshot
@@ -99,6 +99,8 @@ type SnapshotState struct {
 	replayedNum   int // only valid for lazy serving
 	uniqueNum     int
 	currentMetric *metrics.Metric
+
+	isGuestMemMapped bool
 }
 
 // NewSnapshotState Initializes a snapshot state
@@ -113,6 +115,8 @@ func NewSnapshotState(cfg SnapshotStateCfg) *SnapshotState {
 		s.reusedPFServed = make([]float64, 0)
 		s.latencyMetrics = make([]*metrics.Metric, 0)
 	}
+
+	s.isGuestMemMapped = false
 
 	return s
 }
@@ -183,6 +187,10 @@ func (s *SnapshotState) getTraceFile() string {
 }
 
 func (s *SnapshotState) mapGuestMemory() error {
+	if s.isGuestMemMapped {
+		return nil
+	}
+
 	fd, err := os.OpenFile(s.GuestMemPath, os.O_RDONLY, 0444)
 	if err != nil {
 		log.Errorf("Failed to open guest memory file: %v", err)
@@ -195,10 +203,18 @@ func (s *SnapshotState) mapGuestMemory() error {
 		return err
 	}
 
+	if s.InMemWorkingSet || s.MovePages {
+		s.isGuestMemMapped = true
+	}
+
 	return nil
 }
 
 func (s *SnapshotState) unmapGuestMemory() error {
+	if s.InMemWorkingSet || s.MovePages {
+		return nil
+	}
+
 	if err := unix.Munmap(s.guestMem); err != nil {
 		log.Errorf("Failed to munmap guest memory file: %v", err)
 		return err
@@ -245,35 +261,39 @@ func AlignedBlock(blockSize int) []byte {
 
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
+	if s.MovePages || s.InMemWorkingSet {
+		log.Infof("Nothing to fetch for move pages")
+		return nil
+	}
 	size := len(s.trace.trace) * os.Getpagesize()
 
 	log.Infof("Starting to fetch working set")
 
-	if !s.InMemWorkingSet {
-		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
-			log.Errorf("Failed to fetch VMM state: %v\n", err)
-			return err
-		}
+	//if !s.InMemWorkingSet {
+	if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
+		log.Errorf("Failed to fetch VMM state: %v\n", err)
+		return err
+	}
 
-		// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
-		f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
-		if err != nil {
-			log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
-			return err
-		}
+	// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
+	f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
+	if err != nil {
+		log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
+		return err
+	}
 
-		s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
-		if n, err := f.Read(s.workingSet); n != size || err != nil {
-			log.Errorf("Reading working set file failed: %v\n", err)
-			return err
-		} else {
-			log.Infof("Copied %d bytes from file to working set", n)
-		}
-		if err := f.Close(); err != nil {
-			log.Errorf("Failed to close the working set file: %v\n", err)
-			return err
-		}
+	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
+	if n, err := f.Read(s.workingSet); n != size || err != nil {
+		log.Errorf("Reading working set file failed: %v\n", err)
+		return err
 	} else {
+		log.Infof("Copied %d bytes from file to working set", n)
+	}
+	if err := f.Close(); err != nil {
+		log.Errorf("Failed to close the working set file: %v\n", err)
+		return err
+	}
+	/*} else {
 		if s.UseDSA {
 			res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
 			if res != 0 {
@@ -285,7 +305,7 @@ func (s *SnapshotState) fetchState() error {
 			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
 			log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
 		}
-	}
+	}*/
 
 	return nil
 }
@@ -458,6 +478,14 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 
 func (s *SnapshotState) installWorkingSetPages(fd int) {
 	log.Debug("Installing the working set pages")
+	defer log.Debug("Done installing the working set pages")
+
+	defer wake(fd, s.startAddress, os.Getpagesize())
+
+	if s.MovePages {
+		s.MovePagesToNumaNode(0)
+		return
+	}
 
 	// build a list of sorted regions
 	keys := make([]uint64, 0)
@@ -488,8 +516,6 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 
 		srcOffset += uint64(regLength) * 4096
 	}
-
-	wake(fd, s.startAddress, os.Getpagesize())
 }
 
 func installRegion(fd int, src, dst, mode, len uint64) error {

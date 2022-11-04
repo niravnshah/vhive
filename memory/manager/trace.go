@@ -22,6 +22,21 @@
 
 package manager
 
+/*
+#cgo LDFLAGS: -lnuma
+#include <numaif.h>
+
+int get_page_residency(unsigned long count, void* pages, void* status)
+{
+	return move_pages(0, count, (void**)pages, NULL, (int*)status, MPOL_MF_MOVE);
+}
+int move_pages_to_node(unsigned long count, void* pages, void* nodes, void* status)
+{
+	return move_pages(0, count, (void**)pages, (int*)nodes, (int*)status, MPOL_MF_MOVE);
+}
+*/
+import "C"
+
 import (
 	"encoding/csv"
 	"os"
@@ -133,6 +148,59 @@ func (t *Trace) containsRecord(rec Record) bool {
 	return ok
 }
 
+// MovePagesToRemoteNode moves the pages of GuestMemPath to remote node
+func (s *SnapshotState) MovePagesToNumaNode(node int32) error {
+	log.Infof("Moving pages to numa node %d", node)
+
+	ret := C.int(0)
+	nb_pages := len(s.trace.trace)
+	status := make([]int32, nb_pages)
+	pages := make([]uint64, nb_pages)
+	nodes := make([]int32, nb_pages)
+	res_map := make(map[int]int)
+	res_map2 := make(map[int]int)
+
+	log.Infof("Number of pages in trace = %d", nb_pages)
+	for i := 0; i < nb_pages; i++ {
+		pages[i] = uint64(uintptr(unsafe.Pointer(&(s.guestMem[s.trace.trace[i].offset]))))
+		nodes[i] = node
+	}
+
+	for i := 0; i < nb_pages; i++ {
+		status[i] = -1
+	}
+	ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]),
+		unsafe.Pointer(&status[0]))
+	if ret == -1 {
+		log.Errorf("get_page_residency failed")
+	} else {
+		for i := 0; i < nb_pages; i++ {
+			res_map[(int(status[i]))]++
+		}
+		log.Infof("Pages residency before move -> ", res_map)
+	}
+
+	// for i := 0; i < nb_pages; i++ { status[i] = -1 }
+	ret = C.move_pages_to_node(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&nodes[0]),
+		unsafe.Pointer(&status[0]))
+	if ret == -1 {
+		log.Errorf("move_pages_to_node failed with error = ", ret)
+	}
+
+	// for i := 0; i < nb_pages; i++ { status[i] = -1 }
+	ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&status[0]))
+	if ret == -1 {
+		log.Errorf("get_page_residency failed")
+	} else {
+		for i := 0; i < nb_pages; i++ {
+			res_map2[(int(status[i]))]++
+		}
+		log.Infof("Pages residency after move -> ", res_map2)
+	}
+
+	return nil
+}
+
 // ProcessRecord Prepares the trace, the regions map, and the working set file for replay
 // Must be called when record is done (i.e., it is not concurrency-safe vs. AppendRecord)
 func (s *SnapshotState) ProcessRecord(GuestMemPath, WorkingSetPath string) {
@@ -161,15 +229,24 @@ func (s *SnapshotState) ProcessRecord(GuestMemPath, WorkingSetPath string) {
 }
 
 func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath string) {
+	if s.MovePages {
+		log.Infof("Nothing to write into Working Set Pages for MovePages case")
+		return
+	}
 	log.Debug("Writing the working set pages to a disk")
 
 	t := s.trace
-	fSrc, err := os.Open(guestMemFileName)
+	var (
+		fSrc *os.File
+		fDst *os.File
+		err  error
+	)
+	fSrc, err = os.Open(guestMemFileName)
 	if err != nil {
 		log.Fatalf("Failed to open guest memory file for reading")
 	}
 	defer fSrc.Close()
-	fDst, err := os.Create(WorkingSetPath)
+	fDst, err = os.Create(WorkingSetPath)
 	if err != nil {
 		log.Fatalf("Failed to open ws file for writing")
 	}

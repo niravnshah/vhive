@@ -66,6 +66,7 @@ var (
 	hostIface          *string
 	inMemWorkingSet    *bool
 	useDSA             *bool
+	movePages          *bool
 )
 
 func main() {
@@ -88,6 +89,7 @@ func main() {
 	sandbox := flag.String("sandbox", "firecracker", "Sandbox tech to use, valid options: firecracker, gvisor")
 	inMemWorkingSet = flag.Bool("inmem", false, "Use In-memory working set")
 	useDSA = flag.Bool("dsa", false, "Use DSA for memmove")
+	movePages = flag.Bool("move", false, "Use move_pages for memmove")
 	flag.Parse()
 
 	if *sandbox != "firecracker" && *sandbox != "gvisor" {
@@ -146,6 +148,7 @@ func main() {
 		ctriface.WithUPF(*isUPFEnabled),
 		ctriface.InMemWorkingSet(*inMemWorkingSet),
 		ctriface.UseDSA(*useDSA),
+		ctriface.MovePages(*movePages),
 		ctriface.WithMetricsMode(*isMetricsMode),
 		ctriface.WithLazyMode(*isLazyMode),
 	)

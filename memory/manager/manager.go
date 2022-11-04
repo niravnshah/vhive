@@ -49,6 +49,7 @@ type MemoryManagerCfg struct {
 	MetricsModeOn   bool
 	InMemWorkingSet bool
 	UseDSA          bool
+	MovePages       bool
 }
 
 // MemoryManager Serves page faults coming from VMs
@@ -88,6 +89,7 @@ func (m *MemoryManager) RegisterVM(cfg SnapshotStateCfg) error {
 	cfg.metricsModeOn = m.MetricsModeOn
 	cfg.InMemWorkingSet = m.InMemWorkingSet
 	cfg.UseDSA = m.UseDSA
+	cfg.MovePages = m.MovePages
 	if m.UseDSA {
 		idxd.DSA_setup_c("/dev/dsa/wq0.0")
 	}
@@ -244,7 +246,13 @@ func (m *MemoryManager) Deactivate(vmID string) error {
 	}
 
 	state.quitCh <- 0
-	if err := state.unmapGuestMemory(); err != nil {
+	if state.MovePages {
+		err := state.MovePagesToNumaNode(1)
+		if err != nil {
+			logger.Error("MovePagesToNumaNode failed with error %v", err)
+			return err
+		}
+	} else if err := state.unmapGuestMemory(); err != nil {
 		logger.Error("Failed to munmap guest memory")
 		return err
 	}

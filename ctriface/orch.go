@@ -88,6 +88,7 @@ type Orchestrator struct {
 	hostIface        string
 	inMemWorkingSet  bool
 	useDSA           bool
+	movePages        bool
 
 	memoryManager *manager.MemoryManager
 }
@@ -122,6 +123,7 @@ func NewOrchestrator(snapshotter, hostIface string, opts ...OrchestratorOption) 
 			MetricsModeOn:   o.isMetricsMode,
 			InMemWorkingSet: o.inMemWorkingSet,
 			UseDSA:          o.useDSA,
+			MovePages:       o.movePages,
 		}
 		o.memoryManager = manager.NewMemoryManager(managerCfg)
 	}

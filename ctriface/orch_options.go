@@ -63,6 +63,13 @@ func UseDSA(useDSA bool) OrchestratorOption {
 	}
 }
 
+// MovePages Sets whether to use move_pages or not
+func MovePages(movePages bool) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.movePages = movePages
+	}
+}
+
 // WithSnapshotsDir Sets the directory where
 // snapshots should be stored
 func WithSnapshotsDir(snapshotsDir string) OrchestratorOption {
