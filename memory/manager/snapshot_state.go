@@ -23,7 +23,10 @@
 package manager
 
 /*
+#cgo LDFLAGS: -lnuma
 #include "user_page_faults.h"
+#include "cxl_mem.h"
+#include <numa.h>
 */
 import "C"
 
@@ -42,6 +45,7 @@ import (
 	"time"
 
 	"github.com/ftrvxmtrx/fd"
+	"github.com/intel/idxd"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
@@ -63,6 +67,7 @@ type SnapshotStateCfg struct {
 	GuestMemSize     int
 	metricsModeOn    bool
 	InMemWorkingSet  bool
+	InCxlMem         bool
 	UseDSA           bool
 	MovePages        bool
 }
@@ -259,41 +264,104 @@ func AlignedBlock(blockSize int) []byte {
 	return block
 }
 
+type NoCxlNode struct{}
+
+func (m *NoCxlNode) Error() string {
+	return "No CXL memory node found"
+}
+
+type CxlMemAllocErr struct{}
+
+func (m *CxlMemAllocErr) Error() string {
+	return "CXL memory could not be allocated"
+}
+
+// returns the cxl node where memory will be allocated
+//it is suppose to return cxl, currently it is returning
+//any node other than current process
+func fetchMemoryNode() (int, error) {
+	totalNodes := C.get_total_nodes()
+	curNode := C.get_cur_node()
+	n := totalNodes - 1
+	nodes := totalNodes
+	for nodes > 0 {
+		if n != curNode {
+			return int(n), nil
+			//C.numa_free(p,1024)
+		}
+		nodes--
+		n = (n + 1) % totalNodes
+	}
+	return -1, &NoCxlNode{}
+
+}
+
+// AlignedBlock returns []byte of size BlockSize aligned to a multiple
+// of blockSize in CXL memory (must be power of two)
+func AlignedCxlBlock(blockSize int) ([]byte, error) {
+	alignSize := os.Getpagesize() // must be multiple of the filesystem block size
+
+	if blockSize == 0 {
+		return nil, nil
+	}
+	if blockSize%alignSize > 0 {
+		blockSize = ((blockSize / alignSize) + 1) * alignSize
+	}
+
+	node, err := fetchMemoryNode()
+	if err != nil {
+		return nil, err
+	}
+	p := C.numa_alloc_onnode(C.ulong(blockSize), C.int(node))
+	C.setval(p) //hack to force allocate the memory
+	if p == nil {
+		log.Warnf("Error numa memory allocation")
+		return nil, &CxlMemAllocErr{}
+	}
+	block := unsafe.Slice((*byte)(unsafe.Pointer(p)), blockSize)
+	return block, nil
+}
+
+//numa allocated node must be freed
+func FreeCxlMem(block []byte, blockSize int) {
+	C.numa_free(unsafe.Pointer(&block[0]), C.ulong(blockSize))
+}
+
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
-	if s.MovePages || s.InMemWorkingSet {
-		log.Infof("Nothing to fetch for move pages")
+	if s.MovePages || (s.InMemWorkingSet && !s.InCxlMem) {
+		log.Infof("Nothing to fetch for move pages or inMem working set")
 		return nil
 	}
 	size := len(s.trace.trace) * os.Getpagesize()
 
 	log.Infof("Starting to fetch working set")
 
-	//if !s.InMemWorkingSet {
-	if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
-		log.Errorf("Failed to fetch VMM state: %v\n", err)
-		return err
-	}
+	if !s.InMemWorkingSet {
+		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
+			log.Errorf("Failed to fetch VMM state: %v\n", err)
+			return err
+		}
 
-	// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
-	f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
-	if err != nil {
-		log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
-		return err
-	}
+		// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
+		f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
+		if err != nil {
+			log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
+			return err
+		}
 
-	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
-	if n, err := f.Read(s.workingSet); n != size || err != nil {
-		log.Errorf("Reading working set file failed: %v\n", err)
-		return err
+		s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
+		if n, err := f.Read(s.workingSet); n != size || err != nil {
+			log.Errorf("Reading working set file failed: %v\n", err)
+			return err
+		} else {
+			log.Infof("Copied %d bytes from file to working set", n)
+		}
+		if err := f.Close(); err != nil {
+			log.Errorf("Failed to close the working set file: %v\n", err)
+			return err
+		}
 	} else {
-		log.Infof("Copied %d bytes from file to working set", n)
-	}
-	if err := f.Close(); err != nil {
-		log.Errorf("Failed to close the working set file: %v\n", err)
-		return err
-	}
-	/*} else {
 		if s.UseDSA {
 			res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
 			if res != 0 {
@@ -305,7 +373,7 @@ func (s *SnapshotState) fetchState() error {
 			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
 			log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
 		}
-	}*/
+	}
 
 	return nil
 }

@@ -258,7 +258,15 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	)
 
 	size := len(t.trace) * os.Getpagesize()
-	s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
+	if s.InCxlMem {
+		s.workingSet_InMem, err = AlignedCxlBlock(size)
+		if err != nil {
+			log.Fatalf("Failed to open CXL memory")
+			s.workingSet_InMem = nil
+		}
+	} else {
+		s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
+	}
 
 	// Form a sorted slice of keys to access the map in a predetermined order
 	keys := make([]uint64, 0)

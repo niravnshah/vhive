@@ -48,6 +48,7 @@ const (
 type MemoryManagerCfg struct {
 	MetricsModeOn   bool
 	InMemWorkingSet bool
+	InCxlMem        bool
 	UseDSA          bool
 	MovePages       bool
 }
@@ -88,6 +89,7 @@ func (m *MemoryManager) RegisterVM(cfg SnapshotStateCfg) error {
 
 	cfg.metricsModeOn = m.MetricsModeOn
 	cfg.InMemWorkingSet = m.InMemWorkingSet
+	cfg.InCxlMem = m.InCxlMem
 	cfg.UseDSA = m.UseDSA
 	cfg.MovePages = m.MovePages
 	if m.UseDSA {

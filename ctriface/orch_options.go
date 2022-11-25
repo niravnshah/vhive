@@ -56,6 +56,13 @@ func InMemWorkingSet(inMemWorkingSet bool) OrchestratorOption {
 	}
 }
 
+// InCxlMem Sets the in-memory working set on or off
+func InCxlMem(inCxlMem bool) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.inCxlMem = inCxlMem
+	}
+}
+
 // UseDSA Sets whether to use DSA or not
 func UseDSA(useDSA bool) OrchestratorOption {
 	return func(o *Orchestrator) {
