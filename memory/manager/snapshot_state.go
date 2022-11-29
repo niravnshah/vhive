@@ -264,6 +264,7 @@ func AlignedBlock(blockSize int) []byte {
 	return block
 }
 
+/*
 type NoCxlNode struct{}
 
 func (m *NoCxlNode) Error() string {
@@ -326,7 +327,7 @@ func AlignedCxlBlock(blockSize int) ([]byte, error) {
 func FreeCxlMem(block []byte, blockSize int) {
 	C.numa_free(unsafe.Pointer(&block[0]), C.ulong(blockSize))
 }
-
+*/
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
 	if s.MovePages || (s.InMemWorkingSet && !s.InCxlMem) {

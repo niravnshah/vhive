@@ -259,11 +259,11 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 
 	size := len(t.trace) * os.Getpagesize()
 	if s.InCxlMem {
-		s.workingSet_InMem, err = AlignedCxlBlock(size)
+		/*s.workingSet_InMem, err = AlignedCxlBlock(size)
 		if err != nil {
 			log.Fatalf("Failed to open CXL memory")
 			s.workingSet_InMem = nil
-		}
+		}*/
 	} else {
 		s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
 	}
