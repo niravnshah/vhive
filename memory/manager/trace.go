@@ -28,11 +28,11 @@ package manager
 
 int get_page_residency(unsigned long count, void* pages, void* status)
 {
-	return move_pages(0, count, (void**)pages, NULL, (int*)status, MPOL_MF_MOVE);
+	return move_pages(0, count, (void**)pages, NULL, (int*)status, MPOL_MF_MOVE_ALL);
 }
 int move_pages_to_node(unsigned long count, void* pages, void* nodes, void* status)
 {
-	return move_pages(0, count, (void**)pages, (int*)nodes, (int*)status, MPOL_MF_MOVE);
+	return move_pages(0, count, (void**)pages, (int*)nodes, (int*)status, MPOL_MF_MOVE_ALL);
 }
 */
 import "C"
@@ -150,54 +150,69 @@ func (t *Trace) containsRecord(rec Record) bool {
 
 // MovePagesToRemoteNode moves the pages of GuestMemPath to remote node
 func (s *SnapshotState) MovePagesToNumaNode(node int32) error {
-	log.Infof("Moving pages to numa node %d", node)
+	log.Infof("NNS (vmID="+s.VMID+"): Starting to move pages to numa node %d", node)
 
 	ret := C.int(0)
 	nb_pages := len(s.trace.trace)
 	status := make([]int32, nb_pages)
 	pages := make([]uint64, nb_pages)
 	nodes := make([]int32, nb_pages)
-	res_map := make(map[int]int)
-	res_map2 := make(map[int]int)
 
-	log.Infof("Number of pages in trace = %d", nb_pages)
+	log.Infof("NNS (vmID="+s.VMID+"): Number of pages in trace = %d - size = %d", nb_pages, nb_pages*4096)
 	for i := 0; i < nb_pages; i++ {
 		pages[i] = uint64(uintptr(unsafe.Pointer(&(s.guestMem[s.trace.trace[i].offset]))))
 		nodes[i] = node
 	}
 
-	for i := 0; i < nb_pages; i++ {
-		status[i] = -1
-	}
-	ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]),
-		unsafe.Pointer(&status[0]))
-	if ret == -1 {
-		log.Errorf("get_page_residency failed")
-	} else {
-		for i := 0; i < nb_pages; i++ {
-			res_map[(int(status[i]))]++
-		}
-		log.Infof("Pages residency before move -> ", res_map)
-	}
+	// for i := 0; i < nb_pages; i++ {
+	// 	status[i] = -1
+	// }
+	// ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]),
+	// 	unsafe.Pointer(&status[0]))
+	// if ret == -1 {
+	// 	log.Errorf("get_page_residency failed")
+	// } else {
+	// 	res_map := make(map[int]int)
+	// 	for i := 0; i < nb_pages; i++ {
+	// 		res_map[(int(status[i]))]++
+	// 	}
+	// 	log.Infof("NNS (vmID=" + s.VMID + "): Pages residency before move -> ", res_map)
+	// }
 
-	// for i := 0; i < nb_pages; i++ { status[i] = -1 }
+	for i := 0; i < nb_pages; i++ {
+		status[i] = 127 // Setting status[i] to a value which is not represented by an error code or a Numa node
+	}
 	ret = C.move_pages_to_node(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&nodes[0]),
 		unsafe.Pointer(&status[0]))
 	if ret == -1 {
-		log.Errorf("move_pages_to_node failed with error = ", ret)
-	}
-
-	// for i := 0; i < nb_pages; i++ { status[i] = -1 }
-	ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&status[0]))
-	if ret == -1 {
-		log.Errorf("get_page_residency failed")
+		log.Errorf("NNS (vmID="+s.VMID+"): move_pages_to_node failed with error = ", ret)
 	} else {
+		log.Infof("NNS (vmID=" + s.VMID + "): Checking status of move_pages")
+		res_map_move := make(map[int]int)
 		for i := 0; i < nb_pages; i++ {
-			res_map2[(int(status[i]))]++
+			if status[i] < 0 || status[i] > 1 {
+				log.Errorf("NNS (vmID="+s.VMID+"): move_pages for page %d failed with status %d", i, status[i])
+			}
+			res_map_move[(int(status[i]))]++
 		}
-		log.Infof("Pages residency after move -> ", res_map2)
+		log.Infof("NNS (vmID="+s.VMID+"): status of move_pages -> ", res_map_move)
 	}
 
+	// for i := 0; i < nb_pages; i++ {
+	// 	status[i] = -1
+	// }
+	// ret = C.get_page_residency(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&status[0]))
+	// if ret == -1 {
+	// 	log.Errorf("NNS (vmID=" + s.VMID + "): get_page_residency failed")
+	// } else {
+	// 	res_map2 := make(map[int]int)
+	// 	for i := 0; i < nb_pages; i++ {
+	// 		res_map2[(int(status[i]))]++
+	// 	}
+	// 	log.Infof("NNS (vmID=" + s.VMID + "): Pages residency after move -> ", res_map2)
+	// }
+
+	log.Infof("NNS (vmID="+s.VMID+"): Done with move pages to numa node %d", node)
 	return nil
 }
 
@@ -230,7 +245,7 @@ func (s *SnapshotState) ProcessRecord(GuestMemPath, WorkingSetPath string) {
 
 func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetPath string) {
 	if s.MovePages {
-		log.Infof("Nothing to write into Working Set Pages for MovePages case")
+		log.Infof("NNS (vmID=" + s.VMID + "): Nothing to write into Working Set Pages for MovePages case")
 		return
 	}
 	log.Debug("Writing the working set pages to a disk")
@@ -281,7 +296,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	desc_mem := idxd.AlignedBlock(64*elem, 64)
 	comp_mem := idxd.AlignedBlock(32*elem, 32)
 
-	log.Infof("Starting to save working set pages")
+	log.Infof("NNS (vmID=" + s.VMID + "): Starting to save working set pages")
 
 	for idx, offset := range keys {
 		regLength := t.regions[offset]
@@ -330,7 +345,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 		if err := fDst.Sync(); err != nil {
 			log.Fatalf("Sync file failed for dst")
 		}
-		log.Infof("Copied %d bytes from buf to working set file", total_size)
+		log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from buf to working set file", total_size)
 	} else {
 		if s.UseDSA {
 			for idx := 0; idx < elem; idx++ {
@@ -338,13 +353,13 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 				idxd.DSA_wait_for_comp_go(desc)
 				comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(desc.Completion_addr))
 				if comp.Status != 1 {
-					log.Warnf("DSA Copy failed with stattus = 0x%x", comp.Status)
+					log.Warnf("NNS (vmID="+s.VMID+"): DSA Copy failed with stattus = 0x%x", comp.Status)
 				}
 			}
-			log.Infof("Copied %d bytes from buf to im mem working set using DSA", total_size)
+			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from buf to im mem working set using DSA", total_size)
 		} else {
-			log.Infof("Copied %d bytes from buf to im mem working set using CPU", total_size)
+			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from buf to im mem working set using CPU", total_size)
 		}
 	}
-	log.Infof("Done with save working set pages")
+	log.Infof("NNS (vmID=" + s.VMID + "): Done with saving working set pages")
 }

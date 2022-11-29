@@ -331,12 +331,12 @@ func FreeCxlMem(block []byte, blockSize int) {
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
 	if s.MovePages || (s.InMemWorkingSet && !s.InCxlMem) {
-		log.Infof("Nothing to fetch for move pages or inMem working set")
+		log.Infof("NNS (vmID=" + s.VMID + "): Nothing to fetch for move pages or inMem working set")
 		return nil
 	}
 	size := len(s.trace.trace) * os.Getpagesize()
 
-	log.Infof("Starting to fetch working set")
+	log.Infof("NNS (vmID=" + s.VMID + "): Starting to fetch working set")
 
 	if !s.InMemWorkingSet {
 		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
@@ -356,7 +356,7 @@ func (s *SnapshotState) fetchState() error {
 			log.Errorf("Reading working set file failed: %v\n", err)
 			return err
 		} else {
-			log.Infof("Copied %d bytes from file to working set", n)
+			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from file to working set", n)
 		}
 		if err := f.Close(); err != nil {
 			log.Errorf("Failed to close the working set file: %v\n", err)
@@ -368,14 +368,15 @@ func (s *SnapshotState) fetchState() error {
 			if res != 0 {
 				log.Warnf("DSA Copy failed with status = 0x%x for size = %d", res, size)
 			} else {
-				log.Infof("Copied %d bytes from in mem to working set using DSA", size)
+				log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using DSA", size)
 			}
 		} else {
 			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
-			log.Infof("Copied %d bytes from in mem to working set using CPU", nb_bytes)
+			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using CPU", nb_bytes)
 		}
 	}
 
+	log.Infof("NNS (vmID=" + s.VMID + "): Done with fetching working set")
 	return nil
 }
 
@@ -552,6 +553,7 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 	defer wake(fd, s.startAddress, os.Getpagesize())
 
 	if s.MovePages {
+		log.Infof("NNS (vmID=" + s.VMID + "): No need to install the working set pages for move_pages()")
 		s.MovePagesToNumaNode(0)
 		return
 	}
@@ -568,6 +570,8 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 		src       uint64
 	)
 
+	log.Infof("NNS (vmID=" + s.VMID + "): Starting to install the working set pages")
+	log.Infof("NNS (vmID="+s.VMID+"): Total pages = %d - %d bytes", len(keys), len(keys)*4096)
 	for _, offset := range keys {
 		regLength := s.trace.regions[offset]
 		regAddress := s.startAddress + offset
@@ -585,6 +589,7 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 
 		srcOffset += uint64(regLength) * 4096
 	}
+	log.Infof("NNS (vmID=" + s.VMID + "): Done with installing the working set pages")
 }
 
 func installRegion(fd int, src, dst, mode, len uint64) error {
