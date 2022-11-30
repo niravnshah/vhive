@@ -1,8 +1,8 @@
 {
     "functions": [
         {
-            "name": "pyaes",
-            "file": "pyaes.yaml",
+            "name": "rnn-serving",
+            "file": "rnn_serving.yaml",
             "count": 1
         }
     ]
