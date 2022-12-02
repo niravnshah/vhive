@@ -1,8 +1,8 @@
 {
     "functions": [
         {
-            "name": "cnn-serving",
-            "file": "cnn_serving.yaml",
+            "name": "lr-serving",
+            "file": "lr_serving.yaml",
             "count": 1
         }
     ]
