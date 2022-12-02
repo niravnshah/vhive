@@ -1,8 +1,8 @@
 {
     "functions": [
         {
-            "name": "lr-serving",
-            "file": "lr_serving.yaml",
+            "name": "lr-training",
+            "file": "lr_training.yaml",
             "count": 1
         }
     ]
