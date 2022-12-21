@@ -1,8 +1,48 @@
 {
     "functions": [
         {
+            "name": "chameleon",
+            "file": "chameleon.yaml",
+            "count": 1
+        },
+        {
+            "name": "cnn-serving",
+            "file": "cnn_serving.yaml",
+            "count": 1
+        },
+        {
+            "name": "image-rotate",
+            "file": "image_rotate.yaml",
+            "count": 1
+        },
+        {
+            "name": "json-serdes",
+            "file": "json_serdes.yaml",
+            "count": 1
+        },
+        {
+            "name": "lr-serving",
+            "file": "lr_serving.yaml",
+            "count": 1
+        },
+        {
             "name": "lr-training",
             "file": "lr_training.yaml",
+            "count": 1
+        },
+        {
+            "name": "pyaes",
+            "file": "pyaes.yaml",
+            "count": 1
+        },
+        {
+            "name": "video-processing",
+            "file": "video-processing.yaml",
+            "count": 1
+        },
+        {
+            "name": "helloworld",
+            "file": "helloworld.yaml",
             "count": 1
         }
     ]
