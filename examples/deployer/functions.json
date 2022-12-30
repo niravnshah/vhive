@@ -7,27 +7,27 @@
         },
         {
             "name": "cnn-serving",
-            "file": "cnn_serving.yaml",
+            "file": "cnn-serving.yaml",
             "count": 1
         },
         {
             "name": "image-rotate",
-            "file": "image_rotate.yaml",
+            "file": "image-rotate.yaml",
             "count": 1
         },
         {
             "name": "json-serdes",
-            "file": "json_serdes.yaml",
+            "file": "json-serdes.yaml",
             "count": 1
         },
         {
             "name": "lr-serving",
-            "file": "lr_serving.yaml",
+            "file": "lr-serving.yaml",
             "count": 1
         },
         {
             "name": "lr-training",
-            "file": "lr_training.yaml",
+            "file": "lr-training.yaml",
             "count": 1
         },
         {
