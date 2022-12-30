@@ -369,6 +369,7 @@ func (f *Function) AddInstance() *metrics.Metric {
 	funcClient, err := f.getFuncClient()
 	if metr != nil {
 		metr.MetricMap[metrics.ConnectFuncClient] = metrics.ToUS(time.Since(tStart))
+		logger.Infof("NNS (vmID=%s): Metric - %s = %f", f.vmID, metrics.ConnectFuncClient, metr.MetricMap[metrics.ConnectFuncClient])
 	}
 	if err != nil {
 		logger.Panic("Failed to acquire func client", err)

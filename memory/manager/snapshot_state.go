@@ -495,6 +495,7 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 				s.installWorkingSetPages(fd)
 				if s.metricsModeOn {
 					s.currentMetric.MetricMap[installWSMetric] = metrics.ToUS(time.Since(tStart))
+					log.Infof("NNS (vmID=%s): Metric - %s = %f", s.VMID, installWSMetric, s.currentMetric.MetricMap[installWSMetric])
 				}
 
 				workingSetInstalled = true

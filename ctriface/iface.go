@@ -100,11 +100,13 @@ func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *
 		return nil, nil, errors.Wrapf(err, "Failed to get/pull image")
 	}
 	startVMMetric.MetricMap[metrics.GetImage] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.GetImage, startVMMetric.MetricMap[metrics.GetImage])
 
 	tStart = time.Now()
 	conf := o.getVMConfig(vm)
 	resp, err := o.fcClient.CreateVM(ctx, conf)
 	startVMMetric.MetricMap[metrics.FcCreateVM] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.FcCreateVM, startVMMetric.MetricMap[metrics.FcCreateVM])
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create the microVM in firecracker-containerd")
 	}
@@ -132,6 +134,7 @@ func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *
 		containerd.WithRuntime("aws.firecracker", nil),
 	)
 	startVMMetric.MetricMap[metrics.NewContainer] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.NewContainer, startVMMetric.MetricMap[metrics.NewContainer])
 	vm.Container = &container
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create a container")
@@ -151,6 +154,7 @@ func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *
 	tStart = time.Now()
 	task, err := container.NewTask(ctx, cio.NewCreator(cio.WithStreams(os.Stdin, iologger, iologger)))
 	startVMMetric.MetricMap[metrics.NewTask] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.NewTask, startVMMetric.MetricMap[metrics.NewTask])
 	vm.Task = &task
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to create a task")
@@ -168,6 +172,7 @@ func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *
 	tStart = time.Now()
 	ch, err := task.Wait(ctx)
 	startVMMetric.MetricMap[metrics.TaskWait] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.TaskWait, startVMMetric.MetricMap[metrics.TaskWait])
 	vm.TaskCh = ch
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to wait for a task")
@@ -187,6 +192,7 @@ func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *
 		return nil, nil, errors.Wrap(err, "failed to start a task")
 	}
 	startVMMetric.MetricMap[metrics.TaskStart] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.TaskStart, startVMMetric.MetricMap[metrics.TaskStart])
 
 	defer func() {
 		if retErr != nil {
@@ -453,6 +459,7 @@ func (o *Orchestrator) ResumeVM(ctx context.Context, vmID string) (*metrics.Metr
 		return nil, err
 	}
 	resumeVMMetric.MetricMap[metrics.FcResume] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.FcResume, resumeVMMetric.MetricMap[metrics.FcResume])
 
 	return resumeVMMetric, nil
 }
@@ -524,6 +531,7 @@ func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string) (*metrics.
 	<-loadDone
 
 	loadSnapshotMetric.MetricMap[metrics.LoadVMM] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metrics.LoadVMM, loadSnapshotMetric.MetricMap[metrics.LoadVMM])
 
 	if loadErr != nil || activateErr != nil {
 		multierr := multierror.Of(loadErr, activateErr)

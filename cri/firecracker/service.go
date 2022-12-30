@@ -26,9 +26,11 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/ease-lab/vhive/cri"
 	"github.com/ease-lab/vhive/ctriface"
+	"github.com/ease-lab/vhive/metrics"
 	log "github.com/sirupsen/logrus"
 	criapi "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 )
@@ -70,6 +72,10 @@ func NewFirecrackerService(orch *ctriface.Orchestrator) (*FirecrackerService, er
 	return fs, nil
 }
 
+func endFunction(vmID string, metric string, starttime time.Time) {
+	log.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, metric, metrics.ToUS(time.Since(starttime)))
+}
+
 // CreateContainer starts a container or a VM, depending on the name
 // if the name matches "user-container", the cri plugin starts a VM, assigning it an IP,
 // otherwise starts a regular container
@@ -97,6 +103,11 @@ func (fs *FirecrackerService) createUserContainer(ctx context.Context, r *criapi
 		stockErr  error
 		stockDone = make(chan struct{})
 	)
+
+	funcName := "FirecrackerService.createUserContainer"
+	vmID := "123"
+	log.Infof("NNS (vmID=%s): starting %s", vmID, funcName)
+	defer endFunction(vmID, funcName, time.Now())
 
 	go func() {
 		defer close(stockDone)
@@ -127,12 +138,12 @@ func (fs *FirecrackerService) createUserContainer(ctx context.Context, r *criapi
 
 	// Wait for placeholder UC to be created
 	<-stockDone
-	
+
 	// Check for error from container creation
- 	if stockErr != nil {
- 		log.WithError(stockErr).Error("failed to create container")
- 		return nil, stockErr
- 	}
+	if stockErr != nil {
+		log.WithError(stockErr).Error("failed to create container")
+		return nil, stockErr
+	}
 
 	containerdID := stockResp.ContainerId
 	err = fs.coordinator.insertActive(containerdID, funcInst)

@@ -210,6 +210,7 @@ func (m *MemoryManager) FetchState(vmID string) error {
 		err = state.fetchState()
 		if state.metricsModeOn {
 			state.currentMetric.MetricMap[fetchStateMetric] = metrics.ToUS(time.Since(tStart))
+			logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, fetchStateMetric, state.currentMetric.MetricMap[fetchStateMetric])
 		}
 	}
 
