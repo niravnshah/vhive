@@ -2,47 +2,47 @@
     "functions": [
         {
             "name": "chameleon",
-            "file": "chameleon.yaml",
+            "file": "chameleon-nshah5.yaml",
             "count": 1
         },
         {
             "name": "cnn-serving",
-            "file": "cnn-serving.yaml",
+            "file": "cnn-serving-nshah5.yaml",
             "count": 1
         },
         {
             "name": "image-rotate",
-            "file": "image-rotate.yaml",
+            "file": "image-rotate-nshah5.yaml",
             "count": 1
         },
         {
             "name": "json-serdes",
-            "file": "json-serdes.yaml",
+            "file": "json-serdes-nshah5.yaml",
             "count": 1
         },
         {
             "name": "lr-serving",
-            "file": "lr-serving.yaml",
+            "file": "lr-serving-nshah5.yaml",
             "count": 1
         },
         {
             "name": "lr-training",
-            "file": "lr-training.yaml",
+            "file": "lr-training-nshah5.yaml",
             "count": 1
         },
         {
             "name": "pyaes",
-            "file": "pyaes.yaml",
+            "file": "pyaes-nshah5.yaml",
             "count": 1
         },
         {
             "name": "video-processing",
-            "file": "video-processing.yaml",
+            "file": "video-processing-nshah5.yaml",
             "count": 1
         },
         {
             "name": "helloworld",
-            "file": "helloworld.yaml",
+            "file": "helloworld-nshah5.yaml",
             "count": 1
         }
     ]
