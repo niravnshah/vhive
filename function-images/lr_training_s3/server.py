@@ -25,25 +25,25 @@ def cleanup(sentence):
 minioEnvKey = "MINIO_ADDRESS"
 df_name = 'dataset.csv'
 df2_name = 'dataset2.csv'
-df_path = '/pulled_' + df_name
-df2_path = 'pulled_' + df2_name
+df_path = '/' + df_name
+df2_path = '' + df2_name
 
 minioAddress = os.getenv(minioEnvKey)
 
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
-        if minioAddress == None:
-            return None
+        # if minioAddress == None:
+        #     return None
 
-        minioClient = Minio(minioAddress,
-                access_key='minioadmin',
-                secret_key='minioadmin',
-                secure=False)
+        # minioClient = Minio(minioAddress,
+        #         access_key='minioadmin',
+        #         secret_key='minioadmin',
+        #         secure=False)
 
         if request.name == "record":
             msg = 'Hello, %s!' % responses[0]
-            minioClient.fget_object('mybucket', df_name, df_path)
+            # minioClient.fget_object('mybucket', df_name, df_path)
 
             df = pd.read_csv(df_path)
             df['train'] = df['Text'].apply(cleanup)
@@ -53,7 +53,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             model.fit(train, df['Score'])
         elif request.name == "replay":
             msg = 'Hello, %s!' % responses[1]
-            minioClient.fget_object('mybucket', df2_name, df2_path)
+            # minioClient.fget_object('mybucket', df2_name, df2_path)
 
             df2 = pd.read_csv(df2_path)
             df2['train'] = df2['Text'].apply(cleanup)
@@ -63,7 +63,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             model2.fit(train2, df2['Score'])
         else:
             msg = 'Hello, %s!' % request.name
-            minioClient.fget_object('mybucket', df_name, df_path)
+            # minioClient.fget_object('mybucket', df_name, df_path)
 
             df = pd.read_csv(df_path)
             df['train'] = df['Text'].apply(cleanup)

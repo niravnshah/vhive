@@ -11,8 +11,8 @@ tmp = "/tmp/"
 minioEnvKey = "MINIO_ADDRESS"
 vid1_name = 'vid1.mp4'
 vid2_name = 'vid2.mp4'
-vid1_path = '/pulled_' + vid1_name
-vid2_path = '/pulled_' + vid2_name
+vid1_path = '/' + vid1_name
+vid2_path = '/' + vid2_name
 
 minioAddress = os.getenv(minioEnvKey)
 
@@ -48,28 +48,28 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
-        if minioAddress == None:
-            return None
+        # if minioAddress == None:
+        #     return None
 
-        minioClient = Minio(minioAddress,
-                access_key='minioadmin',
-                secret_key='minioadmin',
-                secure=False)
+        # minioClient = Minio(minioAddress,
+        #         access_key='minioadmin',
+        #         secret_key='minioadmin',
+        #         secure=False)
 
         if request.name == "record":
             msg = 'Hello, %s!' % responses[0]
 
-            minioClient.fget_object('mybucket', vid1_name, vid1_path)
+            # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)
         elif request.name == "replay":
             msg = 'Hello, %s!' % responses[1]
 
-            minioClient.fget_object('mybucket', vid2_name, vid2_path)
+            # minioClient.fget_object('mybucket', vid2_name, vid2_path)
             video_processing(vid2_path)
         else:
             msg = 'Hello, %s!' % request.name
 
-            minioClient.fget_object('mybucket', vid1_name, vid1_path)
+            # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)
 
         return helloworld_pb2.HelloReply(message=msg)

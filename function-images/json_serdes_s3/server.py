@@ -27,8 +27,8 @@ import json
 minioEnvKey = "MINIO_ADDRESS"
 data_name = '2.json'
 data2_name = '1.json'
-data_path = '/pulled_' + data_name
-data2_path = '/pulled_' + data2_name
+data_path = '/' + data_name
+data2_path = '/' + data2_name
 
 responses = ["record_response", "replay_response"]
 
@@ -37,28 +37,28 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
-        if minioAddress == None:
-            return None
+        # if minioAddress == None:
+        #     return None
 
-        minioClient = Minio(minioAddress,
-                access_key='minioadmin',
-                secret_key='minioadmin',
-                secure=False)
+        # minioClient = Minio(minioAddress,
+        #         access_key='minioadmin',
+        #         secret_key='minioadmin',
+        #         secure=False)
         if request.name == "record":
             msg = 'Hello, %s!' % responses[0]
-            minioClient.fget_object('mybucket', data_name, data_path)
+            # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)
             str_json = json.dumps(json_data, indent=4)
         elif request.name == "replay":
             msg = 'Hello, %s!' % responses[1]
-            minioClient.fget_object('mybucket', data2_name, data2_path)
+            # minioClient.fget_object('mybucket', data2_name, data2_path)
             data2 = open(data2_path).read()
             json_data = json.loads(data2)
             str_json = json.dumps(json_data, indent=4)
         else:
             msg = 'Hello, %s!' % request.name
-            minioClient.fget_object('mybucket', data_name, data_path)
+            # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)
             str_json = json.dumps(json_data, indent=4)
