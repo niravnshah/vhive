@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 
 import grpc
@@ -23,19 +24,21 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         aes = pyaes.AESModeOfOperationCTR(KEY)
 
         if request.name == "record":
-            msg = 'Hello, %s! -- pyaes' % responses[0]
+            msg = 'Hello, %s! -- pyaes -- ' % responses[0]
             ciphertext = aes.encrypt(message)
         elif request.name == "replay":
-            msg = 'Hello, %s! -- pyaes' % responses[1]
+            msg = 'Hello, %s! -- pyaes -- ' % responses[1]
             ciphertext = aes.encrypt(message2)
         else:
-            msg = 'Hello, %s! -- pyaes' % request.name
+            msg = 'Hello, %s! -- pyaes -- ' % request.name
             ciphertext = aes.encrypt(message)
 
 
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

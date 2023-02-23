@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 
 import grpc
@@ -33,27 +34,29 @@ print('Model2 is ready')
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         #res = decode_predictions(preds) # requires access to the Internet
         if request.name == "record":
-            msg = 'Hello, %s! -- cnn_serving' % responses[0]
+            msg = 'Hello, %s! -- cnn_serving -- ' % responses[0]
             x = image.img_to_array(img)
             x = np.expand_dims(x, axis=0)
             x = preprocess_input(x)
             preds = model.predict(x)
         elif request.name == "replay":
-            msg = 'Hello, %s! -- cnn_serving' % responses[1]
+            msg = 'Hello, %s! -- cnn_serving -- ' % responses[1]
             x2 = image.img_to_array(img2)
             x2 = np.expand_dims(x2, axis=0)
             x2 = preprocess_input(x2)
             preds2 = model.predict(x2)
         else:
-            msg = 'Hello, %s! -- cnn_serving' % request.name
+            msg = 'Hello, %s! -- cnn_serving -- ' % request.name
             x = image.img_to_array(img)
             x = np.expand_dims(x, axis=0)
             x = preprocess_input(x)
             preds = model.predict(x)
 
         #joblib.dump(model, '/var/local/dir/lr_model.pk')
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

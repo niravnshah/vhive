@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 
 import grpc
@@ -27,6 +28,7 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         tmpl = PageTemplate(BIGTABLE_ZPT)
 
         data = {}
@@ -34,15 +36,15 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         num_of_rows = 10
 
         if request.name == "record":
-            msg = 'Hello, %s! -- chameleon' % responses[0]
+            msg = 'Hello, %s! -- chameleon -- ' % responses[0]
             num_of_cols = 15
             num_of_rows = 10
         elif request.name == "replay":
-            msg = 'Hello, %s! -- chameleon' % responses[1]
+            msg = 'Hello, %s! -- chameleon -- ' % responses[1]
             num_of_cols = 10
             num_of_rows = 15
         else:
-            msg = 'Hello, %s! -- chameleon' % request.name
+            msg = 'Hello, %s! -- chameleon -- ' % request.name
 
         for i in range(num_of_cols):
             data[str(i)] = i
@@ -51,6 +53,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         options = {'table': table}
 
         data = tmpl.render(options=options)
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

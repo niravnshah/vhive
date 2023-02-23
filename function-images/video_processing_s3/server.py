@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 import cv2
 from minio import Minio
@@ -48,6 +49,7 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         # if minioAddress == None:
         #     return None
 
@@ -57,21 +59,22 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secure=False)
 
         if request.name == "record":
-            msg = 'Hello, %s! -- video_processing' % responses[0]
+            msg = 'Hello, %s! -- video_processing -- ' % responses[0]
 
             # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)
         elif request.name == "replay":
-            msg = 'Hello, %s! -- video_processing' % responses[1]
+            msg = 'Hello, %s! -- video_processing -- ' % responses[1]
 
             # minioClient.fget_object('mybucket', vid2_name, vid2_path)
             video_processing(vid2_path)
         else:
-            msg = 'Hello, %s! -- video_processing' % request.name
+            msg = 'Hello, %s! -- video_processing -- ' % request.name
 
             # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)
 
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

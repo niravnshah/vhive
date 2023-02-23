@@ -14,6 +14,7 @@
 """The Python implementation of the GRPC helloworld.Greeter server."""
 
 from concurrent import futures
+from datetime import datetime
 import logging
 import os
 import pickle
@@ -51,16 +52,18 @@ rnn_model.eval()
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         if request.name == "record":
-            msg = 'Hello, %s! -- rnn_serving' % responses[0]
+            msg = 'Hello, %s! -- rnn_serving -- ' % responses[0]
             output_names = list(rnn_model.samples(language, start_letters))
         elif request.name == "replay":
-            msg = 'Hello, %s! -- rnn_serving' % responses[1]
+            msg = 'Hello, %s! -- rnn_serving -- ' % responses[1]
             output_names = list(rnn_model.samples(language2, start_letters2))
         else:
-            msg = 'Hello, %s! -- rnn_serving' % request.name
+            msg = 'Hello, %s! -- rnn_serving -- ' % request.name
             output_names = list(rnn_model.samples(language, start_letters))
 
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

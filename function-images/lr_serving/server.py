@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 
 import grpc
@@ -45,16 +46,18 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         if request.name == "record":
-            msg = 'Hello, %s! -- lr_serving' % responses[0]
+            msg = 'Hello, %s! -- lr_serving -- ' % responses[0]
             y = model.predict(X)
         elif request.name == "replay":
-            msg = 'Hello, %s! -- lr_serving' % responses[1]
+            msg = 'Hello, %s! -- lr_serving -- ' % responses[1]
             y = model.predict(X2)
         else:
-            msg = 'Hello, %s! -- lr_serving' % request.name
+            msg = 'Hello, %s! -- lr_serving -- ' % request.name
             y = model.predict(X)
 
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

@@ -1,4 +1,5 @@
 from concurrent import futures
+from datetime import datetime
 import logging
 import os
 import grpc
@@ -33,6 +34,7 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         # if minioAddress == None:
         #     return None
 
@@ -42,7 +44,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secure=False)
 
         if request.name == "record":
-            msg = 'Hello, %s! -- lr_training' % responses[0]
+            msg = 'Hello, %s! -- lr_training -- ' % responses[0]
             # minioClient.fget_object('mybucket', df_name, df_path)
 
             df = pd.read_csv(df_path)
@@ -52,7 +54,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             model = LogisticRegression()
             model.fit(train, df['Score'])
         elif request.name == "replay":
-            msg = 'Hello, %s! -- lr_training' % responses[1]
+            msg = 'Hello, %s! -- lr_training -- ' % responses[1]
             # minioClient.fget_object('mybucket', df2_name, df2_path)
 
             df2 = pd.read_csv(df2_path)
@@ -62,7 +64,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             model2 = LogisticRegression()
             model2.fit(train2, df2['Score'])
         else:
-            msg = 'Hello, %s! -- lr_training' % request.name
+            msg = 'Hello, %s! -- lr_training -- ' % request.name
             # minioClient.fget_object('mybucket', df_name, df_path)
 
             df = pd.read_csv(df_path)
@@ -73,6 +75,7 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             model.fit(train, df['Score'])
 
         #joblib.dump(model, '/var/local/dir/lr_model.pk')
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 

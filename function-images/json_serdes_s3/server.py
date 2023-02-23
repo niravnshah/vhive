@@ -14,6 +14,7 @@
 """The Python implementation of the GRPC helloworld.Greeter server."""
 
 from concurrent import futures
+from datetime import datetime
 import logging
 import os
 import grpc
@@ -37,6 +38,7 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        start_time = datetime.now()
         # if minioAddress == None:
         #     return None
 
@@ -45,24 +47,25 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secret_key='minioadmin',
         #         secure=False)
         if request.name == "record":
-            msg = 'Hello, %s! -- json_serdes' % responses[0]
+            msg = 'Hello, %s! -- json_serdes -- ' % responses[0]
             # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)
             str_json = json.dumps(json_data, indent=4)
         elif request.name == "replay":
-            msg = 'Hello, %s! -- json_serdes' % responses[1]
+            msg = 'Hello, %s! -- json_serdes -- ' % responses[1]
             # minioClient.fget_object('mybucket', data2_name, data2_path)
             data2 = open(data2_path).read()
             json_data = json.loads(data2)
             str_json = json.dumps(json_data, indent=4)
         else:
-            msg = 'Hello, %s! -- json_serdes' % request.name
+            msg = 'Hello, %s! -- json_serdes -- ' % request.name
             # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)
             str_json = json.dumps(json_data, indent=4)
 
+        msg += str(datetime.now() - start_time)
         return helloworld_pb2.HelloReply(message=msg)
 
 
