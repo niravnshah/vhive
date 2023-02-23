@@ -57,17 +57,17 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secure=False)
 
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- video_processing' % responses[0]
 
             # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- video_processing' % responses[1]
 
             # minioClient.fget_object('mybucket', vid2_name, vid2_path)
             video_processing(vid2_path)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- video_processing' % request.name
 
             # minioClient.fget_object('mybucket', vid1_name, vid1_path)
             video_processing(vid1_path)

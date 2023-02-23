@@ -31,17 +31,17 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secret_key='minioadmin',
         #         secure=False)
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- image_rotate' % responses[0]
             # minioClient.fget_object('mybucket', image_name, image_path)
             image = Image.open(image_path)
             img = image.transpose(Image.ROTATE_90)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- image_rotate' % responses[1]
             # minioClient.fget_object('mybucket', image2_name, image_path2)
             image2 = Image.open(image_path2)
             img = image2.transpose(Image.ROTATE_90)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- image_rotate' % request.name
             # minioClient.fget_object('mybucket', image_name, image_path)
             image = Image.open(image_path)
             img = image.transpose(Image.ROTATE_90)

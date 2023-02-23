@@ -34,15 +34,15 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         num_of_rows = 10
 
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- chameleon' % responses[0]
             num_of_cols = 15
             num_of_rows = 10
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- chameleon' % responses[1]
             num_of_cols = 10
             num_of_rows = 15
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- chameleon' % request.name
 
         for i in range(num_of_cols):
             data[str(i)] = i

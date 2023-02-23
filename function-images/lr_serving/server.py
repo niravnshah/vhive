@@ -46,13 +46,13 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- lr_serving' % responses[0]
             y = model.predict(X)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- lr_serving' % responses[1]
             y = model.predict(X2)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- lr_serving' % request.name
             y = model.predict(X)
 
         return helloworld_pb2.HelloReply(message=msg)

@@ -26,13 +26,13 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         aes = pyaes.AESModeOfOperationCTR(KEY)
 
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- pyaes' % responses[0]
             ciphertext = aes.encrypt(message)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- pyaes' % responses[1]
             ciphertext = aes.encrypt(message2)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- pyaes' % request.name
             ciphertext = aes.encrypt(message)
 
 

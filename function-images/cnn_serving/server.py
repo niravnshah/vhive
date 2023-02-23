@@ -22,12 +22,12 @@ sess = tf.Session(config=session_conf)
 
 img = image.load_img('/image.jpg', target_size=(227, 227))
 model = SqueezeNet(weights='imagenet')
-model._make_predict_function() 
+model._make_predict_function()
 print('Model is ready')
 
 img2 = image.load_img('/image2.jpg', target_size=(227, 227))
 model2 = SqueezeNet(weights='imagenet')
-model2._make_predict_function() 
+model2._make_predict_function()
 print('Model2 is ready')
 
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
@@ -35,19 +35,19 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
     def SayHello(self, request, context):
         #res = decode_predictions(preds) # requires access to the Internet
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- cnn_serving' % responses[0]
             x = image.img_to_array(img)
             x = np.expand_dims(x, axis=0)
             x = preprocess_input(x)
             preds = model.predict(x)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- cnn_serving' % responses[1]
             x2 = image.img_to_array(img2)
             x2 = np.expand_dims(x2, axis=0)
             x2 = preprocess_input(x2)
             preds2 = model.predict(x2)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- cnn_serving' % request.name
             x = image.img_to_array(img)
             x = np.expand_dims(x, axis=0)
             x = preprocess_input(x)

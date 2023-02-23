@@ -45,19 +45,19 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
         #         secret_key='minioadmin',
         #         secure=False)
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- json_serdes' % responses[0]
             # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)
             str_json = json.dumps(json_data, indent=4)
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- json_serdes' % responses[1]
             # minioClient.fget_object('mybucket', data2_name, data2_path)
             data2 = open(data2_path).read()
             json_data = json.loads(data2)
             str_json = json.dumps(json_data, indent=4)
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- json_serdes' % request.name
             # minioClient.fget_object('mybucket', data_name, data_path)
             data = open(data_path).read()
             json_data = json.loads(data)

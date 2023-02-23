@@ -42,7 +42,7 @@ with open('/rnn_params.pkl', 'rb') as pkl:
 all_categories =['French', 'Czech', 'Dutch', 'Polish', 'Scottish', 'Chinese', 'English', 'Italian', 'Portuguese', 'Japanese', 'German', 'Russian', 'Korean', 'Arabic', 'Greek', 'Vietnamese', 'Spanish', 'Irish']
 n_categories = len(all_categories)
 all_letters = string.ascii_letters + " .,;'-"
-n_letters = len(all_letters) + 1 
+n_letters = len(all_letters) + 1
 
 rnn_model = rnn.RNN(n_letters, 128, n_letters, all_categories, n_categories, all_letters, n_letters)
 rnn_model.load_state_dict(torch.load('/rnn_model.pth'))
@@ -52,13 +52,13 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- rnn_serving' % responses[0]
             output_names = list(rnn_model.samples(language, start_letters))
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- rnn_serving' % responses[1]
             output_names = list(rnn_model.samples(language2, start_letters2))
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- rnn_serving' % request.name
             output_names = list(rnn_model.samples(language, start_letters))
 
         return helloworld_pb2.HelloReply(message=msg)

@@ -12,11 +12,11 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
         if request.name == "record":
-            msg = 'Hello, %s!' % responses[0]
+            msg = 'Hello, %s! -- helloworld' % responses[0]
         elif request.name == "replay":
-            msg = 'Hello, %s!' % responses[1]
+            msg = 'Hello, %s! -- helloworld' % responses[1]
         else:
-            msg = 'Hello, %s!' % request.name
+            msg = 'Hello, %s! -- helloworld' % request.name
 
         return helloworld_pb2.HelloReply(message=msg)
 
