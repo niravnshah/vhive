@@ -7,6 +7,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps
 
 FROM ghcr.io/niravnshah/vhive/py_grpc:base as var_workload
+ENV PYTHONUNBUFFERED=1
 COPY *.py /
 COPY *.jpeg /
 COPY --from=builder_workload /root/.local /root/.local

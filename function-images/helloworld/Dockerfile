@@ -4,6 +4,7 @@ COPY requirements.txt .
 RUN pip3 install --user -r requirements.txt
 
 FROM ghcr.io/niravnshah/vhive/py_grpc:base as var_workload
+ENV PYTHONUNBUFFERED=1
 COPY *.py /
 COPY --from=builder_workload /root/.local /root/.local
 RUN apk add libstdc++ --update --no-cache
