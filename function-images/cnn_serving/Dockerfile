@@ -32,7 +32,7 @@ RUN pip3 uninstall -y enum34
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN pip3 install --no-cache-dir protobuf==3.11.3 grpcio==${GRPC_PYTHON_VERSION}
 
-FROM tatsushid/alpine-py3-tensorflow-jupyter as var_workload
+FROM ghcr.io/niravnshah/vhive/cnn_serving:builder_workload as var_workload
 COPY *.py /
 COPY image* /
 COPY squeezenet_weights_tf_dim_ordering_tf_kernels.h5  /tmp

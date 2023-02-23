@@ -6,7 +6,7 @@ RUN apk add --no-cache \
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-FROM frolvlad/alpine-python3 as var_workload
+FROM ghcr.io/niravnshah/vhive/lr_serving:builder_workload as var_workload
 COPY *.py /
 COPY dataset.csv /
 COPY lr_model.pk /
