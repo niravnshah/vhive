@@ -43,8 +43,10 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 	"unsafe"
 
+	"github.com/ease-lab/vhive/metrics"
 	"github.com/intel/idxd"
 	log "github.com/sirupsen/logrus"
 )
@@ -182,8 +184,12 @@ func (s *SnapshotState) MovePagesToNumaNode(node int32) error {
 	for i := 0; i < nb_pages; i++ {
 		status[i] = 127 // Setting status[i] to a value which is not represented by an error code or a Numa node
 	}
+	log.Infof("NNS (vmID=" + s.VMID + "): Just before move_pages()")
+	tStart := time.Now()
 	ret = C.move_pages_to_node(C.ulong(nb_pages), unsafe.Pointer(&pages[0]), unsafe.Pointer(&nodes[0]),
 		unsafe.Pointer(&status[0]))
+	tDone := metrics.ToUS(time.Since(tStart))
+	log.Infof("NNS (vmID="+s.VMID+"): Just after move_pages() -- time = %f", tDone)
 	if ret == -1 {
 		log.Errorf("NNS (vmID="+s.VMID+"): move_pages_to_node failed with error = ", ret)
 	} else {
