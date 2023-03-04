@@ -154,9 +154,9 @@ func (s *SnapshotState) MovePagesToNumaNode(node int32) error {
 
 	ret := C.int(0)
 	nb_pages := len(s.trace.trace)
-	status := make([]int32, nb_pages)
+	status := make([]int32, nb_pages) // avoid this allocation
 	pages := make([]uint64, nb_pages)
-	nodes := make([]int32, nb_pages)
+	nodes := make([]int32, nb_pages) // use node_0/node_1
 
 	log.Infof("NNS (vmID="+s.VMID+"): Number of pages in trace = %d - size = %d", nb_pages, nb_pages*4096)
 	for i := 0; i < nb_pages; i++ {
@@ -188,14 +188,14 @@ func (s *SnapshotState) MovePagesToNumaNode(node int32) error {
 		log.Errorf("NNS (vmID="+s.VMID+"): move_pages_to_node failed with error = ", ret)
 	} else {
 		log.Infof("NNS (vmID=" + s.VMID + "): Checking status of move_pages")
-		res_map_move := make(map[int]int)
+		// res_map_move := make(map[int]int) // avoid allocation
 		for i := 0; i < nb_pages; i++ {
 			if status[i] < 0 || status[i] > 1 {
 				log.Errorf("NNS (vmID="+s.VMID+"): move_pages for page %d failed with status %d", i, status[i])
 			}
-			res_map_move[(int(status[i]))]++
+			// res_map_move[(int(status[i]))]++
 		}
-		log.Infof("NNS (vmID="+s.VMID+"): status of move_pages -> ", res_map_move)
+		log.Infof("NNS (vmID=" + s.VMID + "): status of move_pages -> " /*res_map_move*/)
 	}
 
 	// for i := 0; i < nb_pages; i++ {
@@ -273,14 +273,15 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	)
 
 	size := len(t.trace) * os.Getpagesize()
-	if s.InCxlMem {
-		/*s.workingSet_InMem, err = AlignedCxlBlock(size)
-		if err != nil {
-			log.Fatalf("Failed to open CXL memory")
-			s.workingSet_InMem = nil
-		}*/
-	} else {
+	if s.InMemWorkingSet {
 		s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
+	}
+	if s.InCxlMem {
+		s.workingSet_InMem, err = AlignedCxlBlock(size)
+		if err != nil {
+			log.Errorf("NNS (vmID=" + s.VMID + "): Failed to open CXL memory")
+			s.workingSet_InMem = nil
+		}
 	}
 
 	// Form a sorted slice of keys to access the map in a predetermined order
@@ -308,7 +309,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 			log.Fatalf("Read file failed for src")
 		}
 
-		if !s.InMemWorkingSet {
+		if !s.InMemWorkingSet && !s.InCxlMem {
 			if n, err := fDst.WriteAt(buf_slice[idx], dstOffset); n != copyLen || err != nil {
 				log.Fatalf("Write file failed for dst")
 			} else {
@@ -341,7 +342,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 		count += regLength
 	}
 
-	if !s.InMemWorkingSet {
+	if !s.InMemWorkingSet && !s.InCxlMem {
 		if err := fDst.Sync(); err != nil {
 			log.Fatalf("Sync file failed for dst")
 		}

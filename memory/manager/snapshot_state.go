@@ -25,7 +25,7 @@ package manager
 /*
 #cgo LDFLAGS: -lnuma
 #include "user_page_faults.h"
-#include "cxl_mem.h"
+//#include "cxl_mem.h"
 #include <numa.h>
 */
 import "C"
@@ -39,13 +39,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/ftrvxmtrx/fd"
-	"github.com/intel/idxd"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
@@ -208,7 +208,7 @@ func (s *SnapshotState) mapGuestMemory() error {
 		return err
 	}
 
-	if s.InMemWorkingSet || s.MovePages {
+	if s.InMemWorkingSet || s.InCxlMem || s.MovePages {
 		s.isGuestMemMapped = true
 	}
 
@@ -216,7 +216,7 @@ func (s *SnapshotState) mapGuestMemory() error {
 }
 
 func (s *SnapshotState) unmapGuestMemory() error {
-	if s.InMemWorkingSet || s.MovePages {
+	if s.InMemWorkingSet || s.InCxlMem || s.MovePages {
 		return nil
 	}
 
@@ -294,7 +294,15 @@ func fetchMemoryNode() (int, error) {
 		n = (n + 1) % totalNodes
 	}
 	return -1, &NoCxlNode{}
-
+}
+*/
+func carray2slice(array unsafe.Pointer, len int) []byte {
+	var list []byte
+	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&list)))
+	sliceHeader.Cap = len
+	sliceHeader.Len = len
+	sliceHeader.Data = uintptr(array)
+	return list
 }
 
 // AlignedBlock returns []byte of size BlockSize aligned to a multiple
@@ -309,17 +317,19 @@ func AlignedCxlBlock(blockSize int) ([]byte, error) {
 		blockSize = ((blockSize / alignSize) + 1) * alignSize
 	}
 
-	node, err := fetchMemoryNode()
-	if err != nil {
-		return nil, err
-	}
-	p := C.numa_alloc_onnode(C.ulong(blockSize), C.int(node))
-	C.setval(p) //hack to force allocate the memory
+	// node, err := fetchMemoryNode()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	p := C.numa_alloc_onnode(C.ulong(blockSize), 1)
+	// C.setval(p) //hack to force allocate the memory
 	if p == nil {
 		log.Warnf("Error numa memory allocation")
-		return nil, &CxlMemAllocErr{}
+		return nil, nil
 	}
-	block := unsafe.Slice((*byte)(unsafe.Pointer(p)), blockSize)
+	// block := unsafe.Slice((*byte)(unsafe.Pointer(p)), blockSize)
+	// block := ([blockSize]byte)(p)[:blockSize:blockSize]
+	block := carray2slice(p, blockSize)
 	return block, nil
 }
 
@@ -327,54 +337,54 @@ func AlignedCxlBlock(blockSize int) ([]byte, error) {
 func FreeCxlMem(block []byte, blockSize int) {
 	C.numa_free(unsafe.Pointer(&block[0]), C.ulong(blockSize))
 }
-*/
+
 // fetchState Fetches the working set file (or the whole guest memory) and the VMM state file
 func (s *SnapshotState) fetchState() error {
-	if s.MovePages || (s.InMemWorkingSet && !s.InCxlMem) {
-		log.Infof("NNS (vmID=" + s.VMID + "): Nothing to fetch for move pages or inMem working set")
+	if s.InMemWorkingSet || s.InCxlMem || s.MovePages {
+		log.Infof("NNS (vmID=" + s.VMID + "): Nothing to fetch for move pages or inMem or inCxlMem working set")
 		return nil
 	}
 	size := len(s.trace.trace) * os.Getpagesize()
 
 	log.Infof("NNS (vmID=" + s.VMID + "): Starting to fetch working set")
 
-	if !s.InMemWorkingSet {
-		if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
-			log.Errorf("Failed to fetch VMM state: %v\n", err)
-			return err
-		}
-
-		// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
-		f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
-		if err != nil {
-			log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
-			return err
-		}
-
-		s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
-		if n, err := f.Read(s.workingSet); n != size || err != nil {
-			log.Errorf("Reading working set file failed: %v\n", err)
-			return err
-		} else {
-			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from file to working set", n)
-		}
-		if err := f.Close(); err != nil {
-			log.Errorf("Failed to close the working set file: %v\n", err)
-			return err
-		}
-	} else {
-		if s.UseDSA {
-			res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
-			if res != 0 {
-				log.Warnf("DSA Copy failed with status = 0x%x for size = %d", res, size)
-			} else {
-				log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using DSA", size)
-			}
-		} else {
-			nb_bytes := copy(s.workingSet, s.workingSet_InMem)
-			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using CPU", nb_bytes)
-		}
+	// if !s.InMemWorkingSet {
+	if _, err := ioutil.ReadFile(s.VMMStatePath); err != nil {
+		log.Errorf("Failed to fetch VMM state: %v\n", err)
+		return err
 	}
+
+	// O_DIRECT allows to fully leverage disk bandwidth by bypassing the OS page cache
+	f, err := os.OpenFile(s.WorkingSetPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
+	if err != nil {
+		log.Errorf("Failed to open the working set file for direct-io: %v\n", err)
+		return err
+	}
+
+	s.workingSet = AlignedBlock(size) // direct io requires aligned buffer
+	if n, err := f.Read(s.workingSet); n != size || err != nil {
+		log.Errorf("Reading working set file failed: %v\n", err)
+		return err
+	} else {
+		log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from file to working set", n)
+	}
+	if err := f.Close(); err != nil {
+		log.Errorf("Failed to close the working set file: %v\n", err)
+		return err
+	}
+	// } else {
+	// 	if s.UseDSA {
+	// 		res := idxd.DSA_memmove_sync_go(s.workingSet, s.workingSet_InMem, uint32(size))
+	// 		if res != 0 {
+	// 			log.Warnf("DSA Copy failed with status = 0x%x for size = %d", res, size)
+	// 		} else {
+	// 			log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using DSA", size)
+	// 		}
+	// 	} else {
+	// 		nb_bytes := copy(s.workingSet, s.workingSet_InMem)
+	// 		log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using CPU", nb_bytes)
+	// 	}
+	// }
 
 	log.Infof("NNS (vmID=" + s.VMID + "): Done with fetching working set")
 	return nil
@@ -577,7 +587,7 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 		regLength := s.trace.regions[offset]
 		regAddress := s.startAddress + offset
 		mode := uint64(C.const_UFFDIO_COPY_MODE_DONTWAKE)
-		if s.InMemWorkingSet {
+		if s.InMemWorkingSet || s.InCxlMem {
 			src = uint64(uintptr(unsafe.Pointer(&s.workingSet_InMem[srcOffset])))
 		} else {
 			src = uint64(uintptr(unsafe.Pointer(&s.workingSet[srcOffset])))
