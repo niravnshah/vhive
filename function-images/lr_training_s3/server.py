@@ -34,6 +34,7 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- lr_training')
         start_time = datetime.now()
         # if minioAddress == None:
         #     return None
@@ -76,7 +77,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
         #joblib.dump(model, '/var/local/dir/lr_model.pk')
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- lr_training')
+        return reply
 
 
 def serve():

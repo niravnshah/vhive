@@ -24,6 +24,7 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- pyaes')
         start_time = datetime.now()
         aes = pyaes.AESModeOfOperationCTR(KEY)
 
@@ -39,7 +40,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
 
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- pyaes')
+        return reply
 
 
 def serve():

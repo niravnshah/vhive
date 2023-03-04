@@ -28,6 +28,7 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- chameleon')
         start_time = datetime.now()
         tmpl = PageTemplate(BIGTABLE_ZPT)
 
@@ -54,7 +55,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
         data = tmpl.render(options=options)
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- chameleon')
+        return reply
 
 
 def serve():

@@ -52,6 +52,7 @@ rnn_model.eval()
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- rnn_serving')
         start_time = datetime.now()
         if request.name == "record":
             msg = 'Hello, %s! -- rnn_serving -- ' % responses[0]
@@ -64,7 +65,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             output_names = list(rnn_model.samples(language, start_letters))
 
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- rnn_serving')
+        return reply
 
 
 def serve():

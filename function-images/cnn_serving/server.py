@@ -34,6 +34,7 @@ print('Model2 is ready')
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- cnn_serving')
         start_time = datetime.now()
         #res = decode_predictions(preds) # requires access to the Internet
         if request.name == "record":
@@ -57,7 +58,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
         #joblib.dump(model, '/var/local/dir/lr_model.pk')
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- cnn_serving')
+        return reply
 
 
 def serve():

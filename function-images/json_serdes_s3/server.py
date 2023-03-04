@@ -38,6 +38,7 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.warning('NNS: SayHello execution started -- json_serdes')
         start_time = datetime.now()
         # if minioAddress == None:
         #     return None
@@ -66,7 +67,9 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
             str_json = json.dumps(json_data, indent=4)
 
         msg += str(datetime.now() - start_time)
-        return helloworld_pb2.HelloReply(message=msg)
+        reply = helloworld_pb2.HelloReply(message=msg)
+        logging.warning('NNS: SayHello execution ended -- json_serdes')
+        return reply
 
 
 def serve():
