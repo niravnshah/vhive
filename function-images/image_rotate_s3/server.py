@@ -24,6 +24,7 @@ minioAddress = os.getenv(minioEnvKey)
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.basicConfig()
         logging.warning('NNS: SayHello execution started -- image_rotate')
         start_time = datetime.now()
         # if minioAddress == None:
@@ -64,5 +65,4 @@ def serve():
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
     serve()

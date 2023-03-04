@@ -46,6 +46,7 @@ responses = ["record_response", "replay_response"]
 class Greeter(helloworld_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
+        logging.basicConfig()
         logging.warning('NNS: SayHello execution started -- lr_serving')
         start_time = datetime.now()
         if request.name == "record":
@@ -73,5 +74,4 @@ def serve():
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
     serve()
