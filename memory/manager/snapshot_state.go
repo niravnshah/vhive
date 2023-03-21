@@ -141,6 +141,8 @@ func (s *SnapshotState) setupStateOnActivate() {
 
 func (s *SnapshotState) getUFFD() error {
 	var d net.Dialer
+	logger := log.WithFields(log.Fields{"vmID": s.VMID})
+	defer timer("getUFFD", s.VMID, start_timer("getUFFD", s.VMID, logger), logger)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -192,6 +194,8 @@ func (s *SnapshotState) getTraceFile() string {
 }
 
 func (s *SnapshotState) mapGuestMemory() error {
+	logger := log.WithFields(log.Fields{"vmID": s.VMID})
+	defer timer("mapGuestMemory", s.VMID, start_timer("mapGuestMemory", s.VMID, logger), logger)
 	if s.isGuestMemMapped {
 		return nil
 	}

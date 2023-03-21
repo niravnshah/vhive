@@ -132,10 +132,19 @@ func (m *MemoryManager) DeregisterVM(vmID string) error {
 	return nil
 }
 
+func start_timer(name string, vmID string, logger *log.Entry) time.Time {
+	logger.Infof("NNS: Starting %s", name)
+	return time.Now()
+}
+
+func timer(name string, vmID string, start time.Time, logger *log.Entry) {
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, name, metrics.ToUS(time.Since(start)))
+}
+
 // Activate Creates an epoller to serve page faults for the VM
 func (m *MemoryManager) Activate(vmID string) error {
 	logger := log.WithFields(log.Fields{"vmID": vmID})
-
+	defer timer("Activate", vmID, start_timer("Activate", vmID, logger), logger)
 	logger.Debug("Activating instance in the memory manager")
 
 	var (

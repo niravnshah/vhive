@@ -517,9 +517,11 @@ func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string) (*metrics.
 	go func() {
 		defer close(loadDone)
 
+		tStartLoadSnapShot := time.Now()
 		if _, loadErr = o.fcClient.LoadSnapshot(ctx, req); loadErr != nil {
 			logger.Error("Failed to load snapshot of the VM: ", loadErr)
 		}
+		logger.Infof("NNS (vmID=%s): Metric - %s = %f", vmID, "LoadSnapShot", metrics.ToUS(time.Since(tStartLoadSnapShot)))
 	}()
 
 	if o.GetUPFEnabled() {
