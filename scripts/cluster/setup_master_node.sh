@@ -36,8 +36,8 @@ kubectl get configmap kube-proxy -n kube-system -o yaml | \
 sed -e "s/strictARP: false/strictARP: true/" | \
 kubectl apply -f - -n kube-system
 
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.4/manifests/namespace.yaml
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.4/manifests/metallb.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12/manifests/namespace.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12/manifests/metallb.yaml
 kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
 kubectl apply -f $ROOT/configs/metallb/metallb-configmap.yaml
 
@@ -62,7 +62,7 @@ fi
 kubectl create namespace registry
 REPO_VOL_SIZE=$REPO_VOL_SIZE envsubst < $ROOT/configs/registry/repository-volume.yaml | kubectl create --filename -
 kubectl create --filename $ROOT/configs/registry/docker-registry.yaml
-kubectl apply --filename $ROOT/configs/registry/repository-update-hosts.yaml 
+kubectl apply --filename $ROOT/configs/registry/repository-update-hosts.yaml
 
 # magic DNS
 kubectl apply --filename $ROOT/configs/knative_yamls/serving-default-domain.yaml
