@@ -282,7 +282,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 	if s.InMemWorkingSet {
 		s.workingSet_InMem = AlignedBlock(size) // direct io requires aligned buffer
 	}
-	if s.InCxlMem {
+	if s.InCxlMem || s.InNumaWorkingSet {
 		s.workingSet_InMem, err = AlignedCxlBlock(size)
 		if err != nil {
 			log.Errorf("NNS (vmID=" + s.VMID + "): Failed to open CXL memory")
@@ -315,7 +315,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 			log.Fatalf("Read file failed for src")
 		}
 
-		if !s.InMemWorkingSet && !s.InCxlMem {
+		if !s.InMemWorkingSet && !s.InCxlMem && !s.InNumaWorkingSet {
 			if n, err := fDst.WriteAt(buf_slice[idx], dstOffset); n != copyLen || err != nil {
 				log.Fatalf("Write file failed for dst")
 			} else {
@@ -348,7 +348,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 		count += regLength
 	}
 
-	if !s.InMemWorkingSet && !s.InCxlMem {
+	if !s.InMemWorkingSet && !s.InCxlMem && !s.InNumaWorkingSet {
 		if err := fDst.Sync(); err != nil {
 			log.Fatalf("Sync file failed for dst")
 		}

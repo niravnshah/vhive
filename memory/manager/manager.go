@@ -46,11 +46,12 @@ const (
 
 // MemoryManagerCfg Global config of the manager
 type MemoryManagerCfg struct {
-	MetricsModeOn   bool
-	InMemWorkingSet bool
-	InCxlMem        bool
-	UseDSA          bool
-	MovePages       bool
+	MetricsModeOn    bool
+	InMemWorkingSet  bool
+	InNumaWorkingSet bool
+	InCxlMem         bool
+	UseDSA           bool
+	MovePages        bool
 }
 
 // MemoryManager Serves page faults coming from VMs
@@ -89,6 +90,7 @@ func (m *MemoryManager) RegisterVM(cfg SnapshotStateCfg) error {
 
 	cfg.metricsModeOn = m.MetricsModeOn
 	cfg.InMemWorkingSet = m.InMemWorkingSet
+	cfg.InNumaWorkingSet = m.InNumaWorkingSet
 	cfg.InCxlMem = m.InCxlMem
 	cfg.UseDSA = m.UseDSA
 	cfg.MovePages = m.MovePages

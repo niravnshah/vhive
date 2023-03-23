@@ -56,6 +56,13 @@ func InMemWorkingSet(inMemWorkingSet bool) OrchestratorOption {
 	}
 }
 
+// InNumaWorkingSet Sets the remote numa working set on or off
+func InNumaWorkingSet(inNumaWorkingSet bool) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.inNumaWorkingSet = inNumaWorkingSet
+	}
+}
+
 // InCxlMem Sets the in-memory working set on or off
 func InCxlMem(inCxlMem bool) OrchestratorOption {
 	return func(o *Orchestrator) {
