@@ -50,9 +50,9 @@ var (
 	benchDir               = flag.String("benchDirTest", "bench_results", "Directory where stats should be saved")
 	inMemWorkingSetTest    = flag.Bool("inmemTest", false, "Enable in memory working set")
 	inNumaWorkingSetTest   = flag.Bool("innumaTest", false, "Enable remote numa memory working set")
-	inCxlMemTest           = flag.Bool("inCxlMemTest", false, "Enable in CXL memory working set")
+	inCxlMemTest           = flag.Bool("incxlmemTest", false, "Enable in CXL memory working set")
 	useDSATest             = flag.Bool("dsaTest", false, "Use DSA")
-	movePagesTest          = flag.Bool("movePagesTest", false, "Use movePages")
+	movePagesTest          = flag.Bool("moveTest", false, "Use movePages")
 )
 
 func TestMain(m *testing.M) {
