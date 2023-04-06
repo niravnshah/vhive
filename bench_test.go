@@ -354,19 +354,19 @@ func getOutFile(name string) string {
 
 func getAllImages() map[string]string {
 	return map[string]string{
-		"helloworld":          "ghcr.io/ease-lab/helloworld:var_workload",
-		"chameleon":           "ghcr.io/ease-lab/chameleon:var_workload",
-		"pyaes":               "ghcr.io/ease-lab/pyaes:var_workload",
-		"image_rotate":        "ghcr.io/ease-lab/image_rotate:var_workload",
-		"image_rotate_s3":     "ghcr.io/ease-lab/image_rotate_s3:var_workload",
-		"json_serdes":         "ghcr.io/ease-lab/json_serdes:var_workload",
-		"json_serdes_s3":      "ghcr.io/ease-lab/json_serdes_s3:var_workload",
-		"lr_serving":          "ghcr.io/ease-lab/lr_serving:var_workload",
-		"cnn_serving":         "ghcr.io/ease-lab/cnn_serving:var_workload",
-		"rnn_serving":         "ghcr.io/ease-lab/rnn_serving:var_workload",
-		"lr_training_s3":      "ghcr.io/ease-lab/lr_training_s3:var_workload",
-		"lr_training":         "ghcr.io/ease-lab/lr_training:var_workload",
-		"video_processing_s3": "ghcr.io/ease-lab/video_processing_s3:var_workload",
+		"helloworld":       "ghcr.io/niravnshah/vhive/helloworld:var_workload",
+		"chameleon":        "ghcr.io/niravnshah/vhive/chameleon:var_workload",
+		"pyaes":            "ghcr.io/niravnshah/vhive/pyaes:var_workload",
+		"image-rotate":     "ghcr.io/niravnshah/vhive/image_rotate_s3:var_workload",
+		"image-rotate_s3":  "ghcr.io/niravnshah/vhive/image_rotate_s3:var_workload",
+		"json-serdes":      "ghcr.io/niravnshah/vhive/json_serdes_s3:var_workload",
+		"json-serdes_s3":   "ghcr.io/niravnshah/vhive/json_serdes_s3:var_workload",
+		"lr-serving":       "ghcr.io/niravnshah/vhive/lr_serving:var_workload",
+		"cnn-serving":      "ghcr.io/niravnshah/vhive/cnn_serving:var_workload",
+		"rnn-serving":      "ghcr.io/niravnshah/vhive/rnn_serving:var_workload",
+		"lr-training_s3":   "ghcr.io/niravnshah/vhive/lr_training_s3:var_workload",
+		"lr-training":      "ghcr.io/niravnshah/vhive/lr_training_s3:var_workload",
+		"video-processing": "ghcr.io/niravnshah/vhive/video_processing_s3:var_workload",
 	}
 }
 
