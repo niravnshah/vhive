@@ -100,27 +100,14 @@ func DSA_memmove_sync_go(output []byte, input []byte, size uint32) uint32 {
 	desc.Flags[0] = IDXD_FLAG_BLOCK_ON_FAULT | IDXD_FLAG_CRAV | IDXD_FLAG_RCR
 
 	// C.dsa_desc_submit((unsafe.Pointer)(&work_queue[0]), 0, (unsafe.Pointer)(desc))
-	status := DSA_memmove_desc_go(desc, 1)
+	status := DSA_desc_go(desc, 1)
 
 	// fmt.Println("Exiting dsa_memmove_go")
 	return status
 }
 
-func DSA_memmove_desc_go(hw_desc *DSA_hw_desc_go, sync uint) uint32 {
-
-	C.dsa_memmove_desc_wrapper(unsafe.Pointer(hw_desc), C.u_int32_t(sync))
-
-	if sync != 0 {
-		comp := (*DSA_completion_record_go)((unsafe.Pointer)(hw_desc.Completion_addr))
-
-		DSA_wait_for_comp_go(hw_desc)
-		if comp.Status != 1 {
-			fmt.Printf("comp.Status = %d\n", comp.Status)
-			return uint32(comp.Status)
-		} else {
-			return 0
-		}
-	}
+func DSA_desc_go(hw_desc *DSA_hw_desc_go, sync uint) uint32 {
+	C.dsa_desc_wrapper(unsafe.Pointer(hw_desc), C.u_int32_t(sync))
 	return 0
 }
 

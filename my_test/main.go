@@ -55,7 +55,7 @@ func via_go(input []byte, output []byte, size uint32) {
 		// } else {
 		// 	fmt.Printf("dsa_memmove_sync failed via go..!!\n")
 		// }
-		idxd.DSA_memmove_desc_go(desc, 0)
+		idxd.DSA_desc_go(desc, 0)
 	}
 
 	for idx := uint32(0); idx < elem; idx++ {

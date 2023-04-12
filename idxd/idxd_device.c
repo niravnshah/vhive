@@ -58,14 +58,14 @@ dsa_memmove_sync(void *dst, void *src, uint32_t size)
         desc.completion_addr = (uint64_t)&comp;
         desc.flags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
 
-        dsa_memmove_desc(&desc, 1);
+        dsa_desc(&desc, 1);
 
 	EXIT;
 	return comp.status != 1;
 }
 
 uint32_t
-dsa_memmove_desc(struct dsa_hw_desc *hw_desc, uint sync)
+dsa_desc(struct dsa_hw_desc *hw_desc, uint sync)
 {
 	ENTER;
 
@@ -83,9 +83,9 @@ dsa_memmove_desc(struct dsa_hw_desc *hw_desc, uint sync)
 }
 
 uint32_t
-dsa_memmove_desc_wrapper(void *hw_desc, uint sync)
+dsa_desc_wrapper(void *hw_desc, uint sync)
 {
-	return dsa_memmove_desc((struct dsa_hw_desc *)(hw_desc), sync);
+	return dsa_desc((struct dsa_hw_desc *)(hw_desc), sync);
 }
 
 uint32_t

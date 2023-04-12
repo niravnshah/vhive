@@ -334,7 +334,7 @@ func (s *SnapshotState) writeWorkingSetPagesToFile(guestMemFileName, WorkingSetP
 				desc.Flags[0] = idxd.IDXD_FLAG_BLOCK_ON_FAULT | idxd.IDXD_FLAG_CRAV | idxd.IDXD_FLAG_RCR
 
 				// idxd.DSA_memmove_sync_go(s.workingSet_InMem[dstOffset:], buf_slice[idx], uint32(copyLen))
-				idxd.DSA_memmove_desc_go(desc, 0)
+				idxd.DSA_desc_go(desc, 0)
 				log.Debug("Copied %d bytes from buf to im mem working set using DSA", copyLen)
 			} else {
 				nb_bytes := copy(s.workingSet_InMem[dstOffset:], buf_slice[idx])

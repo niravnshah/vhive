@@ -28,7 +28,7 @@ void dsa_close();
 uint32_t dsa_wait_for_comp(struct dsa_hw_desc *hw_desc);
 // uint32_t dsa_wait_for_comp_wrapper(void *hw_desc);
 uint32_t dsa_memmove_sync(void *dst, void *src, uint32_t size);
-uint32_t dsa_memmove_desc(struct dsa_hw_desc *hw_desc, uint sync);
-uint32_t dsa_memmove_desc_wrapper(void *hw_desc, uint sync);
+uint32_t dsa_desc(struct dsa_hw_desc *hw_desc, uint sync);
+uint32_t dsa_desc_wrapper(void *hw_desc, uint sync);
 
 #endif
