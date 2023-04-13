@@ -589,9 +589,16 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 
 	log.Infof("NNS (vmID=" + s.VMID + "): Starting to install the working set pages")
 	log.Infof("NNS (vmID="+s.VMID+"): Total pages = %d - %d bytes", len(keys), len(keys)*4096)
-	for _, offset := range keys {
+
+	elem := len(s.trace.regions)
+	desc_mem := idxd.AlignedBlock(64*elem, 64)
+	comp_mem := idxd.AlignedBlock(32*elem, 32)
+	total_size := 0
+
+	for idx, offset := range keys {
 		regLength := s.trace.regions[offset]
 		regAddress := s.startAddress + offset
+		copyLen := regLength * os.Getpagesize()
 		mode := uint64(C.const_UFFDIO_COPY_MODE_DONTWAKE)
 		if s.InMemWorkingSet || s.InCxlMem {
 			src = uint64(uintptr(unsafe.Pointer(&s.workingSet_InMem[srcOffset])))
@@ -600,11 +607,46 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 		}
 		dst := regAddress
 
-		if err := installRegion(fd, src, dst, mode, uint64(regLength)); err != nil {
-			log.Fatalf("install_region: %v", err)
+		if s.UseDSA {
+			for page := 0; page < regLength; page++ {
+				pageptr := (*uint64)(unsafe.Pointer(uintptr(dst + (uint64)(page*4096))))
+				log.Infof("About to touch page with addr = 0x%x", pageptr)
+				*pageptr = 0
+				log.Infof("After touching page with addr = 0x%x", pageptr)
+			}
+			desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+			comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(&comp_mem[32*idx]))
+
+			desc.Src_addr = (*uint64)(unsafe.Pointer(uintptr(src)))
+			desc.Dst_addr = (*uint64)(unsafe.Pointer(uintptr(dst)))
+			desc.Xfer_size = uint32(copyLen)
+			desc.Opcode = idxd.DSA_OPCODE_MEMMOVE
+			desc.Completion_addr = (*uint64)(unsafe.Pointer(comp))
+			desc.Flags[0] = idxd.IDXD_FLAG_BLOCK_ON_FAULT | idxd.IDXD_FLAG_CRAV | idxd.IDXD_FLAG_RCR
+
+			idxd.DSA_desc_go(desc, 0)
+			log.Debug("installed %d bytes from in mem to working set using DSA", copyLen)
+
+		} else {
+			if err := installRegion(fd, src, dst, mode, uint64(regLength)); err != nil {
+				log.Fatalf("install_region: %v", err)
+			}
 		}
 
+		total_size += copyLen
 		srcOffset += uint64(regLength) * 4096
+	}
+
+	if s.UseDSA {
+		for idx := 0; idx < elem; idx++ {
+			desc := (*idxd.DSA_hw_desc_go)(unsafe.Pointer(&desc_mem[64*idx]))
+			idxd.DSA_wait_for_comp_go(desc)
+			comp := (*idxd.DSA_completion_record_go)(unsafe.Pointer(desc.Completion_addr))
+			if comp.Status != 1 {
+				log.Warnf("NNS (vmID="+s.VMID+"): DSA Copy failed with stattus = 0x%x", comp.Status)
+			}
+		}
+		log.Infof("NNS (vmID="+s.VMID+"): Copied %d bytes from in mem to working set using DSA", total_size)
 	}
 	log.Infof("NNS (vmID=" + s.VMID + "): Done with installing the working set pages")
 }
