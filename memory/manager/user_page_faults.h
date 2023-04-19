@@ -35,10 +35,8 @@
 // constants for use from Go
 int const_UFFDIO_WAKE = UFFDIO_WAKE;
 int const_UFFDIO_COPY = UFFDIO_COPY;
-int const_UFFDIO_ZEROPAGE = UFFDIO_ZEROPAGE;
 int const_UFFD_EVENT_PAGEFAULT = UFFD_EVENT_PAGEFAULT;
 int const_UFFDIO_COPY_MODE_DONTWAKE = UFFDIO_COPY_MODE_DONTWAKE;
-int const_UFFDIO_ZEROPAGE_MODE_DONTWAKE = UFFDIO_ZEROPAGE_MODE_DONTWAKE;
 
 #define errExit(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
