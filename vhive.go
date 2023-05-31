@@ -90,7 +90,7 @@ func main() {
 	hostIface = flag.String("hostIface", "", "Host net-interface for the VMs to bind to for internet access")
 	sandbox := flag.String("sandbox", "firecracker", "Sandbox tech to use, valid options: firecracker, gvisor")
 	inMemWorkingSet = flag.Bool("inmem", false, "Use In-memory working set")
-	inNumaWorkingSet = flag.Bool("innuma", false, "Use Remote Numa working set")
+	inNumaWorkingSet = flag.Bool("innuma", false, "Use Remote Numa working set. While restoring, first copy into local numa")
 	inCxlMem = flag.Bool("incxlmem", false, "Use In-CxlMem (remote numa) working set")
 	useDSA = flag.Bool("dsa", false, "Use DSA for memmove")
 	movePages = flag.Bool("move", false, "Use move_pages for memmove")
