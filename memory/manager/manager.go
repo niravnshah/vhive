@@ -216,6 +216,7 @@ func (m *MemoryManager) FetchState(vmID string) error {
 
 	if state.isRecordReady && !state.IsLazyMode {
 		if state.metricsModeOn {
+			logger.Infof("NNS (vmID=%s): Metric - %s - started timing", vmID, fetchStateMetric)
 			tStart = time.Now()
 		}
 		err = state.fetchState()

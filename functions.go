@@ -253,9 +253,11 @@ func (f *Function) Serve(ctx context.Context, fID, imageName, reqPayload string)
 			var metr *metrics.Metric
 			isColdStart = true
 			logger.Debug("Function is inactive, starting the instance...")
+			logger.Infof("NNS (vmID=%s): Metric - %s - started timing", "123", metrics.AddInstance)
 			tStart = time.Now()
 			metr = f.AddInstance()
 			serveMetric.MetricMap[metrics.AddInstance] = metrics.ToUS(time.Since(tStart))
+			logger.Infof("NNS (vmID=%s): Metric - %s = %f", "123", metrics.AddInstance, serveMetric.MetricMap[metrics.AddInstance])
 
 			if metr != nil {
 				for k, v := range metr.MetricMap {
@@ -271,9 +273,11 @@ func (f *Function) Serve(ctx context.Context, fID, imageName, reqPayload string)
 	ctxFwd, cancel := context.WithDeadline(context.Background(), time.Now().Add(20*time.Second))
 	defer cancel()
 
+	logger.Infof("NNS (vmID=%s): Metric - %s - started timing", "123", metrics.FuncInvocation)
 	tStart = time.Now()
 	resp, err := f.fwdRPC(ctxFwd, reqPayload)
 	serveMetric.MetricMap[metrics.FuncInvocation] = metrics.ToUS(time.Since(tStart))
+	logger.Infof("NNS (vmID=%s): Metric - %s = %f", "123", metrics.FuncInvocation, serveMetric.MetricMap[metrics.FuncInvocation])
 
 	if err != nil && ctxFwd.Err() == context.Canceled {
 		// context deadline exceeded
@@ -365,6 +369,7 @@ func (f *Function) AddInstance() *metrics.Metric {
 		f.lastInstanceID++
 	}
 
+	logger.Infof("NNS (vmID=%s): Metric - %s - started timing", f.vmID, metrics.ConnectFuncClient)
 	tStart := time.Now()
 	funcClient, err := f.getFuncClient()
 	if metr != nil {

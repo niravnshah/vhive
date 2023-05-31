@@ -453,6 +453,7 @@ func (o *Orchestrator) ResumeVM(ctx context.Context, vmID string) (*metrics.Metr
 
 	ctx = namespaces.WithNamespace(ctx, namespaceName)
 
+	logger.Infof("NNS (vmID=%s): Metric - %s - started timing", vmID, metrics.FcResume)
 	tStart = time.Now()
 	if _, err := o.fcClient.ResumeVM(ctx, &proto.ResumeVMRequest{VMID: vmID}); err != nil {
 		logger.WithError(err).Error("failed to resume the VM")
@@ -512,11 +513,13 @@ func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string) (*metrics.
 		}
 	}
 
+	logger.Infof("NNS (vmID=%s): Metric - %s - started timing", vmID, metrics.LoadVMM)
 	tStart = time.Now()
 
 	go func() {
 		defer close(loadDone)
 
+		logger.Infof("NNS (vmID=%s): Metric - %s - started timing", vmID, "LoadSnapShot")
 		tStartLoadSnapShot := time.Now()
 		if _, loadErr = o.fcClient.LoadSnapshot(ctx, req); loadErr != nil {
 			logger.Error("Failed to load snapshot of the VM: ", loadErr)

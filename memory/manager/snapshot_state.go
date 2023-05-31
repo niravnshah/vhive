@@ -506,6 +506,7 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 
 			if s.isRecordReady && !s.IsLazyMode {
 				if s.metricsModeOn {
+					log.Infof("NNS (vmID=%s): Metric - %s - started timing", s.VMID, installWSMetric)
 					tStart = time.Now()
 				}
 				s.installWorkingSetPages(fd)
