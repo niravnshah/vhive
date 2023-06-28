@@ -92,6 +92,7 @@ type SnapshotState struct {
 	isActive bool
 
 	isRecordReady bool
+	totalPF       uint32
 
 	guestMem         []byte
 	workingSet       []byte
@@ -214,7 +215,7 @@ func (s *SnapshotState) mapGuestMemory() error {
 		return err
 	}
 
-	if s.InMemWorkingSet || s.InCxlMem || s.MovePages {
+	if s.MovePages {
 		s.isGuestMemMapped = true
 	}
 
@@ -222,7 +223,7 @@ func (s *SnapshotState) mapGuestMemory() error {
 }
 
 func (s *SnapshotState) unmapGuestMemory() error {
-	if s.InMemWorkingSet || s.InCxlMem || s.MovePages {
+	if s.MovePages {
 		return nil
 	}
 
@@ -503,6 +504,7 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 	s.firstPageFaultOnce.Do(
 		func() {
 			s.startAddress = address
+			s.totalPF = 0
 
 			if s.isRecordReady && !s.IsLazyMode {
 				if s.metricsModeOn {
@@ -533,6 +535,7 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 		offset: offset,
 	}
 
+	s.totalPF++
 	if !s.isRecordReady {
 		s.trace.AppendRecord(rec)
 	} else {

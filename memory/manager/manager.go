@@ -279,6 +279,7 @@ func (m *MemoryManager) Deactivate(vmID string) error {
 		state.ProcessRecord(state.GuestMemPath, state.WorkingSetPath)
 	}
 
+	logger.Infof("NNS: TotalPF in this instance = %d", state.totalPF)
 	state.isRecordReady = true
 	state.isActive = false
 
