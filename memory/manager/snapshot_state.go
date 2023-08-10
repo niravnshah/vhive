@@ -74,6 +74,11 @@ type SnapshotStateCfg struct {
 	MovePages        bool
 }
 
+type stats struct {
+	timeavg       float64
+	instancecount int
+}
+
 // SnapshotState Stores the state of the snapshot
 // of the VM.
 type SnapshotState struct {
@@ -109,6 +114,7 @@ type SnapshotState struct {
 	currentMetric *metrics.Metric
 
 	isGuestMemMapped bool
+	stats_arr        [512]stats
 }
 
 // NewSnapshotState Initializes a snapshot state
@@ -558,7 +564,7 @@ func (s *SnapshotState) servePageFault(fd int, address uint64) error {
 		tStart = time.Now()
 	}
 
-	err := installRegion(fd, src, dst, mode, 1)
+	err := s.installRegion(fd, src, dst, mode, 1)
 
 	if s.metricsModeOn {
 		s.currentMetric.MetricMap[serveUniqueMetric] += metrics.ToUS(time.Since(tStart))
@@ -604,7 +610,7 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 		}
 		dst := regAddress
 
-		if err := installRegion(fd, src, dst, mode, uint64(regLength)); err != nil {
+		if err := s.installRegion(fd, src, dst, mode, uint64(regLength)); err != nil {
 			log.Fatalf("install_region: %v", err)
 		}
 
@@ -613,7 +619,7 @@ func (s *SnapshotState) installWorkingSetPages(fd int) {
 	log.Infof("NNS (vmID=" + s.VMID + "): Done with installing the working set pages")
 }
 
-func installRegion(fd int, src, dst, mode, len uint64) error {
+func (s *SnapshotState) installRegion(fd int, src, dst, mode, len uint64) error {
 	cUC := C.struct_uffdio_copy{
 		mode: C.ulonglong(mode),
 		copy: 0,
@@ -622,7 +628,22 @@ func installRegion(fd int, src, dst, mode, len uint64) error {
 		len:  C.ulonglong(uint64(os.Getpagesize()) * len),
 	}
 
+	var (
+		tStart   time.Time
+		currTime float64
+	)
+	tStart = time.Now()
+
 	err := ioctl(uintptr(fd), int(C.const_UFFDIO_COPY), unsafe.Pointer(&cUC))
+	currTime = metrics.ToUS(time.Since(tStart))
+	if len < 512 {
+		s.stats_arr[len].timeavg = s.stats_arr[len].timeavg + (currTime-s.stats_arr[len].timeavg)/(float64)(s.stats_arr[len].instancecount+1)
+		s.stats_arr[len].instancecount++
+	} else {
+		log.Infof("NNS: pages in UFFDIO_COPY = %d, time taken = %f", len, currTime)
+	}
+	// log.Infof("NNS: Time for %d pages  =%f", len, currTime)
+
 	if err != nil {
 		return err
 	}

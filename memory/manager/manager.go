@@ -280,6 +280,16 @@ func (m *MemoryManager) Deactivate(vmID string) error {
 	}
 
 	logger.Infof("NNS: TotalPF in this instance = %d", state.totalPF)
+	logger.Infof("NNS: UFFDIO_COPIES")
+	for i := 0; i < 512; i++ {
+		if state.stats_arr[i].instancecount > 0 {
+			logger.Infof("NNS: Total UFFDIO_COPY with %d pages = %d, with avg time = %f",
+				i, state.stats_arr[i].instancecount, state.stats_arr[i].timeavg)
+			state.stats_arr[i].instancecount = 0
+			state.stats_arr[i].timeavg = 0
+		}
+	}
+
 	state.isRecordReady = true
 	state.isActive = false
 
